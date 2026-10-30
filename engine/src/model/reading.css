@@ -1,0 +1,158 @@
+.dr-reading {
+  background: var(--paper, #fff);
+  color: var(--ink, #000);
+  font-family: var(--font, serif);
+  font-size: var(--text-size, 18px);
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+
+.dr-reading p {
+  margin: 0 0 0.6em;
+}
+
+.dr-reading h1,
+.dr-reading h2,
+.dr-reading h3,
+.dr-reading h4,
+.dr-reading h5,
+.dr-reading h6 {
+  margin: 0.8em 0 0.4em;
+  line-height: 1.25;
+}
+
+.dr-reading h1 {
+  font-size: 1.6em;
+}
+
+.dr-reading h2 {
+  font-size: 1.45em;
+}
+
+.dr-reading h3 {
+  font-size: 1.3em;
+}
+
+.dr-reading h4 {
+  font-size: 1.2em;
+}
+
+.dr-reading h5 {
+  font-size: 1.1em;
+}
+
+.dr-reading h6 {
+  font-size: 1em;
+}
+
+.dr-center {
+  text-align: center;
+}
+
+.dr-right {
+  text-align: right;
+}
+
+.dr-li[data-level='1'] {
+  margin-left: 1.5em;
+}
+
+.dr-li[data-level='2'] {
+  margin-left: 3em;
+}
+
+.dr-li[data-level='3'] {
+  margin-left: 4.5em;
+}
+
+.dr-li[data-level='4'] {
+  margin-left: 6em;
+}
+
+.dr-li[data-level='5'] {
+  margin-left: 7.5em;
+}
+
+.dr-li[data-level='6'] {
+  margin-left: 9em;
+}
+
+.dr-li[data-level='7'] {
+  margin-left: 10.5em;
+}
+
+.dr-li[data-level='8'] {
+  margin-left: 12em;
+}
+
+.dr-marker {
+  margin-right: 0.5em;
+}
+
+.dr-table-wrap {
+  margin: 0 0 0.6em;
+  overflow-x: auto;
+}
+
+.dr-reading table {
+  border-collapse: collapse;
+}
+
+.dr-reading td,
+.dr-reading th {
+  border: 1.5px solid var(--ink, #000);
+  padding: 0.3em 0.5em;
+  vertical-align: top;
+  text-align: left;
+}
+
+.dr-reading th {
+  font-weight: 700;
+}
+
+.dr-reading img {
+  max-width: 100%;
+  height: auto;
+}
+
+.dr-placeholder {
+  display: inline-flex;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  min-height: 3em;
+  max-width: 100%;
+  padding: 0.5em;
+  border: 1.5px solid var(--ink, #000);
+  text-align: center;
+  /* The sanitiser keeps the image size as width and height attributes; browsers without attr() types use the box above. */
+  width: attr(width px, auto);
+  height: attr(height px, auto);
+}
+
+.dr-reading a,
+.dr-link {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.dr-link {
+  cursor: pointer;
+}
+
+.dr-page-break {
+  margin: 1em 0;
+  border: 0;
+  border-top: 1.5px dashed var(--ink, #000);
+  opacity: 0.4;
+}
+
+.dr-notes {
+  margin-top: 2em;
+  padding-top: 1em;
+  border-top: 1.5px solid var(--ink, #000);
+}
+
+.dr-note-label {
+  margin-right: 0.5em;
+}

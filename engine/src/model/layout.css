@@ -1,0 +1,80 @@
+:has(> .dr-sheet) {
+  background: var(--canvas, #e5e5e5);
+}
+
+.dr-sheet {
+  box-sizing: border-box;
+  margin: 0 auto;
+  background: #fff;
+  color: #000;
+  font: 11pt sans-serif;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.dr-sheet p {
+  margin: 0;
+}
+
+.dr-h {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.dr-marker {
+  margin-right: 0.5em;
+}
+
+.dr-tab {
+  display: inline-block;
+  width: 2em;
+}
+
+.dr-page-break {
+  margin: 0.5em 0;
+  border: 0;
+  border-top: 1px dashed #808080;
+}
+
+.dr-sheet table {
+  border-collapse: collapse;
+}
+
+.dr-sheet td,
+.dr-sheet th {
+  border: 1px solid #000;
+  padding: 2px 4px;
+  vertical-align: top;
+  text-align: left;
+}
+
+.dr-sheet img {
+  max-width: 100%;
+}
+
+.dr-placeholder {
+  display: inline-flex;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  border: 1px solid #808080;
+  text-align: center;
+}
+
+.dr-link {
+  color: #0563c1;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dr-notes {
+  margin-top: 1em;
+  padding-top: 0.5em;
+  border-top: 1px solid #000;
+}
+
+.dr-note-label {
+  margin-right: 0.5em;
+}

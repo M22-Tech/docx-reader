@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "cfb": "1.2.2",
+    "dompurify": "3.4.17",
     "jszip": "3.10.2",
     "zod": "4.6.7"
   },
