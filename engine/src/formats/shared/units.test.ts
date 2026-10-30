@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseLength } from './units';
+import { halfPointsToPt, parseLength, twipsToMm, twipsToPt, twipsToPx } from './units';
 
 describe('parseLength', () => {
   it('converts every unit to millimetres, points and pixels', () => {
@@ -33,5 +33,22 @@ describe('parseLength', () => {
     }
     expect(parseLength(undefined)).toBeUndefined();
     expect(parseLength(null)).toBeUndefined();
+  });
+});
+
+describe('twips and half-points', () => {
+  it('converts twips to millimetres, points and pixels', () => {
+    expect(twipsToMm(1440)).toBeCloseTo(25.4, 9);
+    expect(twipsToMm(11906)).toBeCloseTo(210, 1);
+    expect(twipsToMm(-720)).toBeCloseTo(-12.7, 9);
+    expect(twipsToPt(1440)).toBe(72);
+    expect(twipsToPt(20)).toBe(1);
+    expect(twipsToPx(1440)).toBe(96);
+    expect(twipsToPx(3600)).toBe(240);
+  });
+
+  it('converts half-points to points', () => {
+    expect(halfPointsToPt(22)).toBe(11);
+    expect(halfPointsToPt(25)).toBe(12.5);
   });
 });
