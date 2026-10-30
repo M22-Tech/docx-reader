@@ -1,5 +1,6 @@
 import '../model/layout.css';
 import '../model/reading.css';
+import '../formats/docx/docx.css';
 import './viewer.css';
 import { listenToApp, sendToApp } from './transport';
 import { createViewer } from './viewer';

@@ -25,7 +25,7 @@
 - Text size: the "Smaller text" and "Larger text" buttons step through 14, 16, 18, 20, 22, 24, 28 and 32 px (default 18). The chosen size is saved as a setting and applies to every document. A button is disabled at its end of the range.
 - Pinch zoom is off; content is never wider than the screen, except tables, which scroll sideways inside their own box when they don't fit.
 - Images are shown at their size, scaled down to the screen width when larger.
-- Headings keep their levels (sizes relative to the text size). Paragraph alignment is kept only for centred and right-aligned paragraphs; justified text is shown left-aligned.
+- Headings keep their levels (sizes relative to the text size). Paragraph alignment is kept only for centred and right-aligned paragraphs; justified text is shown left-aligned. `.docx` Reading shows every paragraph left-aligned, because its converter doesn't carry alignment.
 
 ## Links
 

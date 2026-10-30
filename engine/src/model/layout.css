@@ -4,6 +4,8 @@
 
 .dr-sheet {
   box-sizing: border-box;
+  /* The page edge, without changing the page size. */
+  outline: 1.5px solid color-mix(in srgb, var(--ink, #000) 30%, transparent);
   margin: 0 auto;
   background: #fff;
   color: #000;

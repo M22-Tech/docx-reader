@@ -85,6 +85,15 @@
   margin-left: 12em;
 }
 
+/* HTML lists (docx Reading) can't carry Word's own number formats; these follow Word's default nesting. */
+.dr-reading ol ol {
+  list-style-type: lower-alpha;
+}
+
+.dr-reading ol ol ol {
+  list-style-type: lower-roman;
+}
+
 .dr-marker {
   margin-right: 0.5em;
 }

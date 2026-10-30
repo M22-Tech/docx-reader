@@ -1,0 +1,15 @@
+.dr-layout-view .docx-wrapper {
+  background: none;
+  padding: 0;
+}
+
+.dr-layout-view .docx-wrapper > section.docx {
+  box-shadow: none;
+  margin: 0 auto 16px;
+  /* The page edge, without changing the page size. */
+  outline: 1.5px solid color-mix(in srgb, var(--ink, #000) 30%, transparent);
+}
+
+.dr-layout-view .docx-wrapper > section.docx:last-child {
+  margin-bottom: 0;
+}

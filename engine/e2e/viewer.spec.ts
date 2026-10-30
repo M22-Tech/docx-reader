@@ -64,8 +64,6 @@ test.describe('errors', () => {
     ['not-a-document.docx', 'unsupported_format'],
     ['truncated.docx', 'corrupt'],
     ['empty.docx', 'empty'],
-    // No docx adapter yet; a later task changes this expectation.
-    ['features.docx', 'unsupported_format'],
   ];
   for (const [file, code] of cases) {
     test(`${file} reports ${code}`, async ({ page }) => {
@@ -75,6 +73,58 @@ test.describe('errors', () => {
       expect(await viewer.next('error')).toMatchObject({ code });
     });
   }
+});
+
+test.describe('docx document', () => {
+  const ownRequests = (viewer: ViewerHarness) => {
+    const own = pathToFileURL(VIEWER_PATH).href;
+    return viewer.requests.filter((url) => url !== own && !url.startsWith('data:') && !url.startsWith('blob:'));
+  };
+
+  test('features.docx opens in Layout, then switches to Reading', async ({ page }) => {
+    const viewer = await ViewerHarness.load(page);
+    await viewer.next('ready');
+    await viewer.send(openMessage(fixtureBase64('features.docx'), 'layout'));
+
+    expect(await viewer.next('rendered')).toMatchObject({
+      format: 'docx',
+      mode: 'layout',
+      otherModeAvailable: true,
+    });
+    const layout = page.locator('.dr-layout-view');
+    await expect(layout.locator('section.docx')).toHaveCount(2);
+    await expect(layout.getByText('Fixture header text').first()).toBeVisible();
+    await expect(layout.getByText('This is footnote one, at the bottom of the page.')).toBeVisible();
+    expect(await page.locator('meta[name="viewport"]').getAttribute('content')).toContain('width=794');
+    const sources = await layout.locator('img').evaluateAll((images) => images.map((img) => img.getAttribute('src')));
+    expect(sources.length).toBeGreaterThan(0);
+    for (const src of sources) expect(src).toMatch(/^data:/);
+
+    await viewer.send({ type: 'setMode', mode: 'reading' });
+    expect(await viewer.next('rendered')).toMatchObject({ format: 'docx', mode: 'reading' });
+    const reading = page.locator('.dr-reading-view');
+    for (const [level, name] of [
+      [1, 'Heading one'],
+      [2, 'Heading two'],
+      [3, 'Heading three'],
+    ] as const) {
+      await expect(reading.getByRole('heading', { name, level })).toBeVisible();
+    }
+    expect(await reading.locator('[style]').count()).toBe(0);
+
+    await reading.getByText('example.com').click();
+    expect(await viewer.next('openLink')).toEqual({ type: 'openLink', href: 'https://example.com/path?q=1' });
+    expect(ownRequests(viewer)).toEqual([]);
+  });
+
+  test('minimal.docx opens in Reading directly', async ({ page }) => {
+    const viewer = await ViewerHarness.load(page);
+    await viewer.next('ready');
+    await viewer.send(openMessage(fixtureBase64('minimal.docx')));
+    expect(await viewer.next('rendered')).toMatchObject({ format: 'docx', mode: 'reading' });
+    await expect(readingText(page).getByText('Hello, reader.')).toBeVisible();
+    expect(ownRequests(viewer)).toEqual([]);
+  });
 });
 
 test.describe('links', () => {

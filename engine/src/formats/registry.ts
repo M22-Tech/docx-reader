@@ -1,7 +1,9 @@
 import type { Format, FormatAdapter } from './format-adapter';
+import { docxAdapter } from './docx/docx-adapter';
 import { htmlAdapter } from './html/html-adapter';
 
 const adapters: Partial<Record<Format, FormatAdapter>> = {
+  docx: docxAdapter,
   html: htmlAdapter,
 };
 
