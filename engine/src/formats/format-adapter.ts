@@ -13,8 +13,8 @@ export interface FormatAdapter {
   format: Format;
   /** The modes this format can show. */
   modes: readonly Mode[];
-  /** Draws the document as laid out into `container`. */
-  renderLayout?(bytes: Uint8Array, container: HTMLElement, ctx: RenderContext): Promise<void>;
+  /** Draws the document as laid out into `container`; `pageWidthPx` is the page width in CSS pixels. */
+  renderLayout?(bytes: Uint8Array, container: HTMLElement, ctx: RenderContext): Promise<{ pageWidthPx: number }>;
   /** Returns reflowable HTML for Reading mode (not yet sanitised). */
   renderReading(bytes: Uint8Array, ctx: RenderContext): Promise<string>;
 }

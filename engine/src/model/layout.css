@@ -1,4 +1,4 @@
-:has(> .dr-sheet) {
+.dr-layout-view {
   background: var(--canvas, #e5e5e5);
 }
 

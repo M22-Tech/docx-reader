@@ -1,0 +1,41 @@
+:root {
+  --ink: #000;
+  --paper: #fff;
+  --canvas: #fff;
+  --text-size: 18px;
+  --font: serif;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.dr-layout-view {
+  padding: 16px 0;
+}
+
+.dr-reading-view {
+  background: var(--paper);
+  min-height: 100vh;
+}
+
+.dr-reading-view > .dr-reading {
+  box-sizing: border-box;
+  padding: 16px;
+}
+
+.dr-note-bar {
+  padding: 12px 16px;
+  border-bottom: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px sans-serif;
+}

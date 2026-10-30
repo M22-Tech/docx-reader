@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Docx Reader: dev harness</title>
+    <style>
+      body {
+        margin: 0;
+        display: grid;
+        grid-template-columns: 440px 1fr;
+        height: 100vh;
+        font: 14px sans-serif;
+      }
+      aside {
+        padding: 12px;
+        overflow: auto;
+        border-right: 1px solid #888;
+      }
+      aside > * {
+        margin-bottom: 8px;
+      }
+      #viewer {
+        width: 412px;
+        height: 915px;
+        max-height: calc(100vh - 8px);
+        border: 1px solid #888;
+        margin: 4px;
+      }
+      #log {
+        margin: 0;
+        padding: 8px;
+        height: 40vh;
+        overflow: auto;
+        border: 1px solid #888;
+        font: 12px monospace;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <main><iframe id="viewer" src="/viewer.html" title="Viewer"></iframe></main>
+    <aside>
+      <input id="file" type="file" accept=".docx,.docm,.dotx,.dotm,.doc,.dot,.rtf,.odt,.ott,.html,.htm" />
+      <div>
+        <button id="mode" type="button" disabled>Mode: layout</button>
+        <button id="theme" type="button">Theme: light</button>
+      </div>
+      <div>
+        <button id="smaller" type="button">Smaller text</button>
+        <button id="larger" type="button">Larger text</button>
+        <span id="size"></span>
+      </div>
+      <pre id="log"></pre>
+    </aside>
+    <script type="module" src="./harness.ts"></script>
+  </body>
+</html>
