@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { Block, Inline } from '../../model/document-model';
+import type { Block, Inline, Paragraph, Table } from '../../model/document-model';
 import { buildBlocks, type DocFormat } from './doc-paragraphs';
+import type { ListLevel, ListTables } from './doc-lists';
 import { Sprm } from './doc-sprm';
 import { createStyleSheet } from './doc-styles';
 
@@ -181,5 +182,164 @@ describe('buildBlocks with formatting', () => {
   it('puts paragraph properties on the paragraph found by its mark', () => {
     const blocks = buildBlocks('one\rtwo\r', format(8, [], [[4, 8, sprm(Sprm.PJc, 1)]]));
     expect(blocks.map((b) => (b.kind === 'paragraph' ? b.align : undefined))).toEqual([undefined, 'center']);
+  });
+
+  describe('tables', () => {
+    const inTable = (depth: number) => [...sprm(Sprm.PFInTable, 1), ...sprm(Sprm.PItap, depth, 0, 0, 0)];
+    /** `sprmTDefTable` for a row of `cells` cells, each 1000 twips wide. */
+    const rowDef = (cells: number) => {
+      const centers = Array.from({ length: cells + 1 }, (_, i) => i * 1000);
+      const data = [cells, ...centers.flatMap((c) => [c & 0xff, c >> 8]), ...new Array<number>(cells * 20).fill(0)];
+      return sprm(Sprm.TDefTable, (data.length + 1) & 0xff, (data.length + 1) >> 8, ...data);
+    };
+    const paragraphText = (b: Block | undefined) =>
+      b?.kind === 'paragraph' ? b.inlines.map((i) => (i.kind === 'text' ? i.text : '')).join('') : b?.kind;
+
+    it('builds a table from cell and row marks, keeping an empty cell and dropping the row mark', () => {
+      const text = 'A\x07\x07\x07after\r';
+      const blocks = buildBlocks(
+        text,
+        format(
+          text.length,
+          [],
+          [
+            [0, 2, inTable(1)],
+            [2, 3, inTable(1)],
+            [3, 4, [...inTable(1), ...sprm(Sprm.PFTtp, 1), ...sprm(Sprm.TTableHeader, 1), ...rowDef(2)]],
+          ],
+        ),
+      );
+      expect(blocks.map((b) => b.kind)).toEqual(['table', 'paragraph']);
+      const table = blocks[0] as Table;
+      expect(table.rows).toHaveLength(1);
+      expect(table.rows[0]?.header).toBe(true);
+      expect(table.rows[0]?.cells.map((c) => c.blocks.map(paragraphText))).toEqual([['A'], ['']]);
+      expect(paragraphText(blocks[1])).toBe('after');
+    });
+
+    it('builds a nested table from cells that end with a paragraph mark and the inner-row flags', () => {
+      const text = 'out\ri\r\r\x07\x07after\r';
+      const blocks = buildBlocks(
+        text,
+        format(
+          text.length,
+          [],
+          [
+            [0, 4, inTable(1)],
+            [4, 6, [...inTable(2), ...sprm(Sprm.PFInnerTableCell, 1)]],
+            [6, 7, [...inTable(2), ...sprm(Sprm.PFInnerTtp, 1), ...rowDef(1)]],
+            [7, 8, inTable(1)],
+            [8, 9, [...inTable(1), ...sprm(Sprm.PFTtp, 1), ...rowDef(1)]],
+          ],
+        ),
+      );
+      expect(blocks.map((b) => b.kind)).toEqual(['table', 'paragraph']);
+      const cell = (blocks[0] as Table).rows[0]?.cells[0]?.blocks as Block[];
+      expect(cell.map((b) => b.kind)).toEqual(['paragraph', 'table', 'paragraph']);
+      expect(paragraphText(cell[0])).toBe('out');
+      const inner = cell[1] as Table;
+      expect(inner.rows[0]?.cells.map((c) => c.blocks.map(paragraphText))).toEqual([['i']]);
+    });
+
+    it('keeps a cell whose paragraph is entirely hidden, as an empty cell', () => {
+      const text = 'gone\x07\x07';
+      const blocks = buildBlocks(
+        text,
+        format(
+          text.length,
+          [[0, 5, sprm(Sprm.CFVanish, 1)]],
+          [
+            [0, 5, inTable(1)],
+            [5, 6, [...inTable(1), ...sprm(Sprm.PFTtp, 1), ...rowDef(1)]],
+          ],
+        ),
+      );
+      expect((blocks[0] as Table).rows[0]?.cells[0]?.blocks).toEqual([{ kind: 'paragraph', inlines: [] }]);
+    });
+
+    it('gives no paragraph for a stray cell mark outside a table', () => {
+      expect(runs(buildBlocks('\x07x\r', format(3, [])))).toEqual(['x']);
+    });
+  });
+
+  describe('lists', () => {
+    const level = (nfc: number, xst: string, left: number): ListLevel => ({
+      startAt: 1,
+      nfc,
+      restartLimit: 0,
+      xst,
+      papx: bytes(...sprm(Sprm.PDxaLeft, left & 0xff, left >> 8), ...sprm(Sprm.PDxaLeft1, 0x98, 0xfe)),
+    });
+    const lists: ListTables = {
+      lists: [
+        {
+          lsid: 9,
+          levels: [
+            level(0, '\u0000.', 720),
+            level(4, '\u0001)', 1440),
+            ...Array.from({ length: 7 }, () => level(0, '\u0002.', 2160)),
+          ],
+        },
+      ],
+      lfos: [{ lsid: 9, overrides: new Map() }],
+    };
+    const item = (ilvl: number, ...extra: number[]) => [...sprm(Sprm.PIlfo, 1, 0), ...sprm(Sprm.PIlvl, ilvl), ...extra];
+
+    it('numbers list paragraphs and takes the indents from their level', () => {
+      const text = 'one\rtwo\rthree\rplain\r';
+      const blocks = buildBlocks(text, {
+        ...format(
+          text.length,
+          [],
+          [
+            [0, 4, item(0)],
+            [4, 8, item(1)],
+            [8, 14, item(0)],
+          ],
+        ),
+        lists,
+      });
+      const paragraphs = blocks as Paragraph[];
+      expect(paragraphs.map((p) => p.list)).toEqual([
+        { level: 0, marker: '1.', ordered: true },
+        { level: 1, marker: 'a)', ordered: true },
+        { level: 0, marker: '2.', ordered: true },
+        undefined,
+      ]);
+      expect(paragraphs.map((p) => p.indentLeftMm)).toEqual([12.7, 25.4, 12.7, undefined]);
+      expect(paragraphs[0]?.firstLineMm).toBe(-6.35);
+    });
+
+    it('lets the paragraph’s own indent win over its level’s', () => {
+      const blocks = buildBlocks('one\r', {
+        ...format(4, [], [[0, 4, item(0, ...sprm(Sprm.PDxaLeft, 200, 0))]]),
+        lists,
+      });
+      expect((blocks[0] as Paragraph).indentLeftMm).toBe(3.528);
+      expect((blocks[0] as Paragraph).list?.marker).toBe('1.');
+    });
+
+    it('does not number a paragraph whose list does not exist, or any paragraph without list tables', () => {
+      const text = 'one\r';
+      const unknown = [...sprm(Sprm.PIlfo, 7, 0), ...sprm(Sprm.PIlvl, 0)];
+      expect((buildBlocks(text, { ...format(4, [], [[0, 4, unknown]]), lists })[0] as Paragraph).list).toBeUndefined();
+      expect((buildBlocks(text, format(4, [], [[0, 4, item(0)]]))[0] as Paragraph).list).toBeUndefined();
+    });
+
+    it('does not count a paragraph that is gone', () => {
+      const text = 'gone\rtwo\r';
+      const blocks = buildBlocks(text, {
+        ...format(
+          text.length,
+          [[0, 5, sprm(Sprm.CFVanish, 1)]],
+          [
+            [0, 5, item(0)],
+            [5, 9, item(0)],
+          ],
+        ),
+        lists,
+      });
+      expect(blocks.map((b) => (b as Paragraph).list?.marker)).toEqual(['1.']);
+    });
   });
 });

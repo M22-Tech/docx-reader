@@ -271,6 +271,11 @@ test.describe('doc document', () => {
     expect(await viewer.next('rendered')).toMatchObject({ format: 'doc', mode: 'reading' });
     const reading = page.locator('.dr-reading-view');
     await expect(reading.getByText('Heading one')).toBeVisible();
+    await expect(reading.locator('table')).toHaveCount(1);
+    await expect(reading.locator('table tr')).toHaveCount(4);
+    await expect(reading.locator('table').getByText('Delhi')).toBeVisible();
+    await expect(reading.locator('.dr-marker', { hasText: 'a)' })).toBeVisible();
+    await expect(reading.locator('.dr-marker', { hasText: '•' })).toBeVisible();
 
     await reading.getByText('example.com').click();
     expect(await viewer.next('openLink')).toEqual({ type: 'openLink', href: 'https://example.com/path?q=1' });

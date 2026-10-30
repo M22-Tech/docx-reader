@@ -32,7 +32,15 @@ export const Sprm = {
   PDyaBefore: 0xa413,
   PDyaAfter: 0xa414,
   PChgTabs: 0xc615,
-  // Table (read in the tables task; listed here because their operand sizes are special)
+  PIlvl: 0x260a,
+  PIlfo: 0x460b,
+  PFInTable: 0x2416,
+  PFTtp: 0x2417,
+  PFInnerTableCell: 0x244b,
+  PFInnerTtp: 0x244c,
+  PItap: 0x6649,
+  // Table
+  TTableHeader: 0x3404,
   TDefTable: 0xd608,
   // Section
   SXaPage: 0xb01f,

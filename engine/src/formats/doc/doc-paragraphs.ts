@@ -1,8 +1,10 @@
 import type { Block, Inline, Link, Marks, Paragraph } from '../../model/document-model';
 import { resolveFieldChunks } from './doc-fields';
 import { firstRunEndingAfter, type FkpRun } from './doc-fkp';
+import { levelOf, ListNumbering, type ListTables } from './doc-lists';
 import { marksOf, paragraphFields, resolveCharProps, resolveParaProps } from './doc-properties';
 import { prm0Sprm } from './doc-sprm';
+import { buildTables, MAX_TABLE_DEPTH, readRowDef, type FlatItem, type RowDef } from './doc-tables';
 import type { DocText, Piece } from './doc-text';
 import type { StyleSheet } from './doc-styles';
 
@@ -16,6 +18,8 @@ export interface DocFormat {
   papx: readonly FkpRun[];
   styles: StyleSheet;
   fonts: readonly string[];
+  /** `PlfLst` and `PlfLfo`; without them paragraphs are not list items. */
+  lists?: ListTables;
 }
 
 /** A stretch of CPs with the same formatting. */
@@ -26,10 +30,25 @@ interface Segment {
   dropped: boolean;
 }
 
+/** Where a paragraph sits in a table. */
+interface TableInfo {
+  /** 0 outside tables. */
+  depth: number;
+  /** The paragraph ends a cell of a nested table (a cell of the first level ends at `0x07`). */
+  innerCell: boolean;
+  rowEnd: boolean;
+  header: boolean;
+  /** The operand of `sprmTDefTable`. */
+  def?: Uint8Array;
+}
+
 interface ParagraphFormat {
   istd: number;
   fields: Omit<Paragraph, 'kind' | 'inlines'>;
   pageBreakBefore: boolean;
+  /** The list the paragraph names; undefined when it is in none. */
+  list?: { ilfo: number; ilvl: number };
+  table: TableInfo;
 }
 
 /** The grpprl a piece's `Prm` adds to its text: a `Prm0` holds one sprm, a `Prm1` points at a `Prc` of the `Clx`. */
@@ -81,15 +100,32 @@ class Formatter {
     const cached = this.paragraphCache.get(run ? index : -1);
     if (cached) return cached;
     const istd = run?.istd ?? 0;
-    const props = resolveParaProps(styles, istd, run?.grpprl ?? NO_PROPS);
+    const { lists } = this.format;
+    const props = resolveParaProps(
+      styles,
+      istd,
+      run?.grpprl ?? NO_PROPS,
+      lists && ((ilfo, ilvl) => levelOf(lists, ilfo, ilvl)?.papx),
+    );
     const styleNames = styles
       .chain(istd)
       .map((style) => style.name)
       .reverse();
-    const result = {
+    const rowEnd = props.ttp === true || props.innerTtp === true;
+    let depth = props.inTable ? Math.max(props.itap ?? 1, 1) : (props.itap ?? 0);
+    if (rowEnd) depth = Math.max(depth, 1);
+    const result: ParagraphFormat = {
       istd,
       fields: paragraphFields(props, styleNames),
       pageBreakBefore: props.pageBreakBefore === true,
+      table: {
+        depth: Math.min(depth, MAX_TABLE_DEPTH),
+        innerCell: props.innerCell === true,
+        rowEnd,
+        header: props.tableHeader === true,
+        ...(props.tableDef ? { def: props.tableDef } : {}),
+      },
+      ...(props.ilfo !== undefined && props.ilfo > 0 ? { list: { ilfo: props.ilfo, ilvl: props.ilvl ?? 0 } } : {}),
     };
     this.paragraphCache.set(run ? index : -1, result);
     return result;
@@ -189,17 +225,33 @@ class InlineSink {
   }
 }
 
+/** The row definition of a row-end paragraph, as a spread: nothing when its `sprmTDefTable` is absent or unreadable. */
+function defOf(operand: Uint8Array | undefined): { def?: RowDef } {
+  const def = readRowDef(operand);
+  return def ? { def } : {};
+}
+
 /**
  * Builds paragraphs and page breaks from a run of document text whose first character is at CP `cpBase`. With `format`,
  * text carries its marks, paragraphs their properties, and hidden and deleted text is left out.
  */
 export function buildBlocks(text: string, format?: DocFormat, cpBase = 0): Block[] {
   const formatter = format && new Formatter(format);
-  const blocks: Block[] = [];
+  const numbering = format?.lists && new ListNumbering(format.lists);
+  const items: FlatItem[] = [];
   let pending: Pending[] = [];
 
-  function endParagraph(markCp: number): void {
+  /** `terminator` is the character that ends the paragraph: `0x07` ends a cell. */
+  function endParagraph(markCp: number, terminator: string): void {
     const paragraphFormat = formatter?.paragraphAt(markCp);
+    const table = paragraphFormat?.table;
+    const depth = table?.depth ?? 0;
+    if (table?.rowEnd) {
+      // The row end holds no content of its own; its properties give the row.
+      pending = [];
+      items.push({ depth, cellEnd: false, row: { header: table.header, ...defOf(table.def) } });
+      return;
+    }
     const sink = new InlineSink();
     for (const item of pending) {
       const length = item.kind === 'text' ? item.text.length : 1;
@@ -217,11 +269,19 @@ export function buildBlocks(text: string, format?: DocFormat, cpBase = 0): Block
     }
     // A paragraph whose text and mark are both hidden or deleted is gone, not an empty line.
     const markDropped = formatter?.segments(markCp, markCp + 1, paragraphFormat?.istd ?? 0)[0]?.dropped === true;
-    const gone = pending.length > 0 && sink.inlines.length === 0 && markDropped;
+    const cellEnd = depth > 0 && (terminator === '\x07' || table?.innerCell === true);
+    // A cell's last paragraph stays, empty, so the cell does; elsewhere a hidden paragraph is gone.
+    const gone = pending.length > 0 && sink.inlines.length === 0 && markDropped && !cellEnd;
     pending = [];
     if (gone) return;
-    if (paragraphFormat?.pageBreakBefore && blocks.length > 0) blocks.push({ kind: 'pageBreak' });
-    blocks.push({ kind: 'paragraph', ...paragraphFormat?.fields, inlines: sink.inlines });
+    if (paragraphFormat?.pageBreakBefore && items.length > 0)
+      items.push({ block: { kind: 'pageBreak' }, depth, cellEnd: false });
+    const list = paragraphFormat?.list && numbering?.next(paragraphFormat.list.ilfo, paragraphFormat.list.ilvl);
+    items.push({
+      block: { kind: 'paragraph', ...paragraphFormat?.fields, ...(list ? { list } : {}), inlines: sink.inlines },
+      depth,
+      cellEnd,
+    });
   }
 
   for (const chunk of resolveFieldChunks(text)) {
@@ -242,12 +302,12 @@ export function buildBlocks(text: string, format?: DocFormat, cpBase = 0): Block
       switch (char) {
         case '\r':
           flush();
-          endParagraph(cp);
+          endParagraph(cp, char);
           break;
         case '\x07':
-          // A cell end, or a row end whose paragraph is empty; cells are plain paragraphs until tables are read.
+          // Inside a table this ends a cell or a row; elsewhere an empty one is stray and gives no paragraph.
           flush();
-          if (pending.length > 0) endParagraph(cp);
+          if (pending.length > 0 || (formatter?.paragraphAt(cp).table.depth ?? 0) > 0) endParagraph(cp, char);
           break;
         case '\x0b':
           flush();
@@ -259,8 +319,12 @@ export function buildBlocks(text: string, format?: DocFormat, cpBase = 0): Block
           break;
         case '\x0c':
           flush();
-          if (pending.length > 0) endParagraph(cp);
-          blocks.push({ kind: 'pageBreak' });
+          if (pending.length > 0) endParagraph(cp, char);
+          items.push({
+            block: { kind: 'pageBreak' },
+            depth: formatter?.paragraphAt(cp).table.depth ?? 0,
+            cellEnd: false,
+          });
           break;
         case '\x1e':
           append(NON_BREAKING_HYPHEN, chunk.start + offset - 1);
@@ -275,6 +339,6 @@ export function buildBlocks(text: string, format?: DocFormat, cpBase = 0): Block
     flush();
   }
   const last = pending[pending.length - 1];
-  if (last) endParagraph(last.cp + last.text.length - (last.text ? 1 : 0));
-  return blocks;
+  if (last) endParagraph(last.cp + last.text.length - (last.text ? 1 : 0), '');
+  return buildTables(items);
 }

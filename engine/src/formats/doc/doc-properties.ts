@@ -1,7 +1,7 @@
 import type { Marks, Paragraph } from '../../model/document-model';
 import { halfPointsToPt, twipsToMm, twipsToPt } from '../shared/units';
 import { headingLevelFor } from '../shared/heading-rule';
-import { i16, readSprms, Sprm, u16, u8 } from './doc-sprm';
+import { i16, readSprms, Sprm, u16, u32, u8 } from './doc-sprm';
 import type { StyleSheet } from './doc-styles';
 
 /** Word's 16-colour palette by `ico`; index 0 is auto. */
@@ -79,6 +79,20 @@ export interface ParaProps {
   /** `sprmPOutLvl`: 0 to 8, or 9 for body text. */
   outline?: number;
   pageBreakBefore?: boolean;
+  /** `sprmPIlfo` (1-based index into `PlfLfo`, 0 for none) and `sprmPIlvl`. */
+  ilfo?: number;
+  ilvl?: number;
+  /** `sprmPFInTable`, and the table depth `sprmPItap`. */
+  inTable?: boolean;
+  itap?: number;
+  /** `sprmPFTtp` and `sprmPFInnerTtp`: the paragraph is a row end. */
+  ttp?: boolean;
+  innerTtp?: boolean;
+  /** `sprmPFInnerTableCell`: the paragraph ends a cell of a nested table. */
+  innerCell?: boolean;
+  /** The operand of `sprmTDefTable`, and `sprmTTableHeader`. */
+  tableDef?: Uint8Array;
+  tableHeader?: boolean;
 }
 
 /** A toggle sprm operand: 0 off, 1 on, 0x80 the same as the style, 0x81 the opposite of the style. */
@@ -199,6 +213,33 @@ export function applyParaSprms(props: ParaProps, grpprl: Uint8Array): void {
       case Sprm.PFPageBreakBefore:
         props.pageBreakBefore = u8(operand) !== 0;
         break;
+      case Sprm.PIlfo:
+        props.ilfo = i16(operand);
+        break;
+      case Sprm.PIlvl:
+        props.ilvl = u8(operand);
+        break;
+      case Sprm.PFInTable:
+        props.inTable = u8(operand) !== 0;
+        break;
+      case Sprm.PItap:
+        props.itap = u32(operand);
+        break;
+      case Sprm.PFTtp:
+        props.ttp = u8(operand) !== 0;
+        break;
+      case Sprm.PFInnerTtp:
+        props.innerTtp = u8(operand) !== 0;
+        break;
+      case Sprm.PFInnerTableCell:
+        props.innerCell = u8(operand) !== 0;
+        break;
+      case Sprm.TDefTable:
+        props.tableDef = operand;
+        break;
+      case Sprm.TTableHeader:
+        props.tableHeader = u8(operand) !== 0;
+        break;
       default:
     }
   }
@@ -220,12 +261,26 @@ export function resolveCharProps(styles: StyleSheet, paragraphIstd: number, grpp
   return props;
 }
 
-/** A paragraph's properties: its style's (base styles first), then the paragraph's own sprms. */
-export function resolveParaProps(styles: StyleSheet, istd: number, grpprl: Uint8Array): ParaProps {
-  const props: ParaProps = {};
-  for (const style of styles.chain(istd)) if (style.kind === 'paragraph') applyParaSprms(props, style.paraGrpprl);
+/**
+ * A paragraph's properties: its style's (base styles first), then the indents of its list level (`levelGrpprl` gives the
+ * level's `grpprlPapx` for a list item), then the paragraph's own sprms.
+ */
+export function resolveParaProps(
+  styles: StyleSheet,
+  istd: number,
+  grpprl: Uint8Array,
+  levelGrpprl?: (ilfo: number, ilvl: number) => Uint8Array | undefined,
+): ParaProps {
+  const base: ParaProps = {};
+  for (const style of styles.chain(istd)) if (style.kind === 'paragraph') applyParaSprms(base, style.paraGrpprl);
+  const props = { ...base };
   applyParaSprms(props, grpprl);
-  return props;
+  const level = props.ilfo ? levelGrpprl?.(props.ilfo, props.ilvl ?? 0) : undefined;
+  if (!level) return props;
+  const withLevel = base;
+  applyParaSprms(withLevel, level);
+  applyParaSprms(withLevel, grpprl);
+  return withLevel;
 }
 
 /** The marks for resolved character properties (only what differs from the defaults), and whether the text is dropped. */

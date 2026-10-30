@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DocumentError } from '../../document-error';
-import type { Block, DocumentModel, Inline, Paragraph, TextRun } from '../../model/document-model';
+import type { Block, DocumentModel, Inline, Paragraph, Table, TextRun } from '../../model/document-model';
 import { adapterFor } from '../registry';
 import { editStreams, FIB_OFFSET, fixture, setU16, setU32, signal } from './doc-test-helpers';
 import { parseDoc } from './parse-doc';
@@ -80,12 +80,68 @@ describe('features.doc', () => {
     expect(json).not.toMatch(/\\u00(01|13|14|15)/);
   });
 
-  it('has the table cells as paragraphs', async () => {
-    const all = texts(await model);
-    const start = all.indexOf('Name');
-    expect(all.slice(start, start + 6)).toEqual(['Name', 'Role', 'City', 'Asha', 'Engineer', 'Delhi']);
-    expect(all).toEqual(expect.arrayContaining(['Ravi', 'Designer', 'Spans two columns', 'Pune']));
-    expect((await model).blocks.some((b) => b.kind === 'table')).toBe(false);
+  it('reads the list markers from the list tables and gives the items a left indent', async () => {
+    const m = await model;
+    const summary = [
+      'First numbered item',
+      'Nested lettered item',
+      'Second numbered item',
+      'Bullet item',
+      'Nested bullet item',
+    ].map((text) => {
+      const p = find(m, text);
+      return [text, p.list?.marker, p.list?.level, p.list?.ordered, (p.indentLeftMm ?? 0) > 0];
+    });
+    expect(summary).toEqual([
+      ['First numbered item', '1.', 0, true, true],
+      ['Nested lettered item', 'a)', 1, true, true],
+      ['Second numbered item', '2.', 0, true, true],
+      ['Bullet item', '•', 0, false, true],
+      ['Nested bullet item', '◦', 1, false, true],
+    ]);
+    expect(find(m, 'First numbered item').indentLeftMm).toBeCloseTo(12.7, 2);
+    expect(find(m, 'Nested lettered item').indentLeftMm).toBeCloseTo(25.4, 2);
+    expect(find(m, 'First numbered item').firstLineMm).toBeCloseTo(-6.35, 2);
+    expect(find(m, 'Heading three').list).toBeUndefined();
+  });
+
+  it('reads the table with its spans, merged cell and column widths', async () => {
+    const m = await model;
+    const table = m.blocks.find((b): b is Table => b.kind === 'table');
+    if (!table) throw new Error('no table');
+    expect(m.blocks.filter((b) => b.kind === 'table')).toHaveLength(1);
+    expect(table.rows).toHaveLength(4);
+    expect(table.rows.map((r) => r.header)).toEqual([true, undefined, undefined, undefined]);
+    expect(
+      table.rows.map((row) =>
+        row.cells.map((c) => c.blocks.map((b) => (b.kind === 'paragraph' ? textOf(b.inlines) : '')).join('')),
+      ),
+    ).toEqual([
+      ['Name', 'Role', 'City'],
+      ['Asha', 'Engineer', 'Delhi'],
+      ['Ravi', 'Designer'],
+      ['Spans two columns', 'Pune'],
+    ]);
+    expect(table.rows[1]?.cells[2]?.rowSpan).toBe(2);
+    expect(table.rows[2]?.cells).toHaveLength(2);
+    expect(table.rows[3]?.cells[0]?.colSpan).toBe(2);
+    expect(table.columnWidthsMm).toHaveLength(3);
+    for (const width of table.columnWidthsMm ?? []) expect(width).toBeCloseTo(53, 0);
+  });
+
+  it('puts the paragraph after the table outside it, and leaves no cell text in the body', async () => {
+    const m = await model;
+    const index = m.blocks.findIndex((b) => b.kind === 'table');
+    // Word keeps an empty paragraph after a table; the text that follows it is body text too.
+    expect(m.blocks[index + 1]).toEqual({ kind: 'paragraph', inlines: [] });
+    const next = m.blocks.slice(index + 1).find((b): b is Paragraph => b.kind === 'paragraph' && b.inlines.length > 0);
+    expect(textOf(next?.inlines ?? [])).toMatch(/^हिन्दी/);
+    const body = texts(m);
+    for (const cellText of ['Name', 'Role', 'City', 'Asha', 'Engineer', 'Delhi', 'Ravi', 'Designer', 'Pune']) {
+      expect(body).not.toContain(cellText);
+    }
+    expect(body).not.toContain('Spans two columns');
+    expect(JSON.stringify(m.blocks)).not.toContain('\u0007');
   });
 
   it('keeps the Hindi and Bengali sentence unchanged', async () => {

@@ -5,6 +5,7 @@ import { openDocContainer } from './doc-container';
 import { FcLcb, readFib } from './doc-fib';
 import { readChpxRuns, readPapxRuns } from './doc-fkp';
 import { readFontNames } from './doc-fonts';
+import { readListTables } from './doc-lists';
 import { buildBlocks } from './doc-paragraphs';
 import { readPageSetup } from './doc-section';
 import { createStyleSheet, readStyleSheet } from './doc-styles';
@@ -33,6 +34,7 @@ export async function parseDoc(bytes: Uint8Array, signal: AbortSignal): Promise<
       papx: papxPair ? readPapxRuns(wordDocument, table, papxPair) : [],
       styles: stshPair ? readStyleSheet(table, stshPair) : createStyleSheet([]),
       fonts: fontsPair ? readFontNames(table, fontsPair) : [],
+      lists: readListTables(table, fib.pair(FcLcb.PlfLst), fib.pair(FcLcb.PlfLfo)),
     };
     signal.throwIfAborted();
 
