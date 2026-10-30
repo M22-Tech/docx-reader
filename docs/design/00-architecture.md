@@ -28,7 +28,7 @@ The page is built once with Vite into a single HTML file with all scripts and st
 
 - **Layout**: the page sets the viewport width to the document's page width in CSS pixels (`widthMm × 96 / 25.4`), so the web view scales the page to fit the screen and native pinch zoom works (`user-scalable=yes`, maximum scale 4). docx uses `docx-preview`'s pages. The others use the model's Layout renderer: one white sheet at page width with page margins as padding, inline styles for fonts, sizes, colours, alignment, indents and spacing, and a dashed line for each page break.
 - **Reading**: the viewport is `width=device-width` with zoom off. The content is semantic HTML (headings, paragraphs, lists, tables, figures, links, footnotes) styled only by the page's Reading stylesheet, which uses the CSS variables `--ink`, `--paper`, `--text-size` and `--font` (`serif` or `sans-serif`). Tables sit in a wrapper with `overflow-x: auto`.
-- **Sanitising**: every HTML string passes through DOMPurify with one of two profiles. Layout allows `style` attributes and the `<style>` elements docx-preview generates. Reading drops all `style` and `class` attributes except the page's own. Both drop scripts, event handlers, forms, iframes, objects and any `src` or `href` that isn't `data:`, `blob:`, `#…`, `http(s):` or `mailto:`. `http(s)` and `mailto` links are rewritten so tapping one posts `openLink` instead of navigating. Remote and file images are replaced with the placeholder box.
+- **Sanitising**: every HTML string passes through `sanitize/` before it is inserted (see Sanitising below).
 - **Security net**: the page's Content-Security-Policy is `default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data: blob:`. The web view also blocks every navigation away from the initial page (`onShouldStartLoadWithRequest`).
 
 ## The document model
@@ -41,6 +41,39 @@ Mapping rules shared by all parsers:
 - A run's marks are only the ones that differ from defaults; renderers merge adjacent runs with equal marks.
 - Headings: a paragraph is a heading when its style is a built-in heading style or its outline level is 1 to 6 (levels 7 to 9 become 6).
 - Unknown or unsupported content is skipped; an image whose format the page can't show keeps its size with no `src` (placeholder).
+
+## Model renderers
+
+`renderLayout(model)` and `renderReading(model)` in `engine/src/model/` turn the document model into HTML strings. They escape every text and attribute value themselves, even though the sanitiser runs afterwards. Class names all start with `dr-`, and the page's stylesheets (`layout.css`, `reading.css` next to the renderers) are written against them.
+
+| Model | Layout | Reading |
+|---|---|---|
+| document | `<div class="dr-sheet">` at the page width in `mm`, page margins as padding, white background, default text 11pt sans-serif in black; returns `{ html, pageWidthPx }` | `<div class="dr-reading">` |
+| top-level block | carries `data-block="<index>"` | same |
+| paragraph | `<p>`, or `<h1>`…`<h6>` with class `dr-h` (whose sizes come from the runs); inline style for alignment, indents (`mm`), spacing (`pt`) and line height; margins 0 unless the model sets them; an empty paragraph holds a `<br>` so it keeps its height | `<p>` or `<h1>`…`<h6>`; class `dr-center` or `dr-right` for those alignments only; no other paragraph formatting; empty paragraphs are left out |
+| list paragraph | the same paragraph with class `dr-li`, starting with `<span class="dr-marker">` holding the model's marker; the parser's indents position it | `<p class="dr-li" data-level="<level>">` with the marker span; `reading.css` indents by level |
+| text run | `<strong>`, `<em>`, `<u>`, `<s>`, `<sup>`, `<sub>` for the marks, wrapped in `<span style>` for colour, highlight (`background-color`), font family and size | the same tags, no span |
+| line break, tab | `<br>`; `<span class="dr-tab"></span>` (a fixed-width gap) | `<br>`; a space |
+| image | `<img src="data:…;base64,…" width height alt>` at its size, never wider than the sheet | the same, scaled down to the screen width |
+| image without `src` | `<span class="dr-placeholder">Image not shown</span>` sized to the image | the same, never wider than the screen |
+| link | `<a href>`; `#id` becomes `#dr-bm-<id>` | same |
+| anchor | `<a id="dr-bm-<id>" class="dr-anchor"></a>` (the prefix keeps document ids from clashing with the page's own) | same |
+| note reference | `<sup class="dr-noteref"><a id="dr-noteref-<id>" href="#dr-note-<id>">label</a></sup>` (the id only on a note's first reference) | same |
+| notes | after the last block: `<section class="dr-notes">`, each `<div class="dr-note" id="dr-note-<id>">` starting with `<a class="dr-note-label" href="#dr-noteref-<id>">label</a>`, then its blocks | same |
+| page break | `<hr class="dr-page-break">` (dashed) | the same, drawn lighter |
+| table | `<div class="dr-table-wrap"><table>` with `<colgroup>` widths in `mm`; header rows in `<thead>` with `<th>` cells; `colspan`, `rowspan`; cell width and background as inline style; cell blocks rendered the same way, so nested tables work | the same without widths or backgrounds; the wrapper scrolls sideways |
+
+Values go into styles only after checks: colours must match `#rrggbb`, font family names lose quotes, backslashes, semicolons and braces, and numbers must be finite. A value that fails is left out. Image data is turned into base64 in chunks so large images don't overflow the call stack.
+
+## Sanitising
+
+`engine/src/sanitize/` holds two DOMPurify instances, one per mode, each with its own configuration and hooks (hooks are per instance). Both take an HTML string and return a string.
+
+- **Both**: HTML profile only (no SVG or MathML). No `script`, `style` (Reading), `iframe`, `frame`, `object`, `embed`, `form`, `input`, `button`, `textarea`, `select`, `link`, `meta`, `base`, `audio`, `video`, `source`, `template`, and no event handler attributes.
+- **Images**: an `img` whose `src` is not `data:image/png`, `jpeg`, `gif`, `bmp` or `webp` (base64), or `blob:`, is replaced by the placeholder span, keeping its `width` and `height`. `data:image/svg+xml` counts as not allowed, since SVG can carry script.
+- **Links**: `href="#…"` stays. `http:`, `https:` and `mailto:` hrefs move to `data-external-href`, the `href` is removed, and the element gets class `dr-link`, `role="link"` and `tabindex="0"`; the viewer turns a tap on it into `openLink`. Any other `href` (`javascript:`, `file:`, `data:`, relative paths) is removed and the text kept. `target` and `ping` are removed.
+- **Layout**: keeps `class`, `id` and `style` attributes and `<style>` elements (docx-preview writes its styles that way). In both, any `url(…)` that isn't `data:` or `blob:` is replaced with `none`, and `@import` rules are removed.
+- **Reading**: an allow-list of tags: `p`, `h1`–`h6`, `strong`, `b`, `em`, `i`, `u`, `s`, `sup`, `sub`, `br`, `hr`, `a`, `img`, `span`, `div`, `section`, `table`, `thead`, `tbody`, `tfoot`, `tr`, `td`, `th`, `caption`, `ul`, `ol`, `li`, `blockquote`, `pre`, `code`, `figure`, `figcaption`. Others are removed with their content kept. No `style` attributes; only `dr-` classes stay; `id`, `colspan`, `rowspan`, `width`, `height`, `alt`, `href`, `src`, `role`, `tabindex` and `data-*` attributes stay.
 
 ## Storage
 
