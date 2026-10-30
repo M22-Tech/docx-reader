@@ -1,0 +1,17 @@
+{
+  "name": "docx-reader",
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "npm",
+      "version": ">=11.0.0",
+      "onFail": "warn"
+    }
+  },
+  "scripts": {
+    "setup": "./setup.sh"
+  }
+}
