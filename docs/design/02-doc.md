@@ -77,7 +77,7 @@ The parser is split into stages, each a pure function with its own tests: contai
 ## Tables
 
 - A paragraph with `sprmPFInTable` (depth `sprmPItap`, 1 when absent) is in a table. Inside a row, `0x07` ends a cell's last paragraph. The row ends at a paragraph that is a table row mark (`sprmPFTtp`, or `sprmPFInnerTtp` for nested depths); that paragraph's `sprmTDefTable` gives the cell boundaries (`rgdxaCenter`, so widths in twips) and per-cell `TC80` flags: `fVertRestart` and `fVertMerge` for vertical merges, `fFirstMerged` and `fMerged` for old-style horizontal merges. `sprmTTableHeader` marks a header row.
-- Merges become `rowSpan` and `colSpan`; merged-away cells are omitted. Consecutive rows at the same depth form one table.
+- Column spans come from the `rgdxaCenter` boundaries of all rows (the column grid rule in `00-architecture.md`); the old-style `fFirstMerged`/`fMerged` flags are also honoured. Vertical merges become `rowSpan`; merged-away cells are omitted. Consecutive rows at the same depth form one table.
 - Nested tables (depth above 1) are built as tables inside cells. If the nesting is inconsistent, inner rows are flattened into paragraphs in the outer cell.
 
 ## Lists
@@ -98,3 +98,20 @@ The parser is split into stages, each a pure function with its own tests: contai
 
 - `PlcffndRef` gives the CP of each footnote reference and `PlcffndTxt` the CP ranges of their text inside the footnote part (starting at `ccpText`); endnotes likewise. Each becomes a `Note` (labels "1", "2"… for footnotes, "i", "ii"… for endnotes, unless the reference is a custom mark, in which case its text is the label) and a `noteRef` at the reference.
 - `PlcfBkf`, `PlcfBkl` and `SttbfBkmk` give bookmark names and their start CPs; each start becomes an `anchor` inline so `#bookmark` links work.
+
+## Verified against the fixture
+
+`fixtures/features.doc` (saved by LibreOffice) was read with an independent script while writing the prompts; these facts hold for it and are good test anchors:
+
+- Streams: `WordDocument`, `1Table` (`fWhichTblStm` is 1), `Data`. `nFib` is `0x0101`, `csw` 14, `cslw` 22, `cbRgFcLcb` 136 (`0x88`).
+- `FibRgLw97`: `ccpText` 862, `ccpFtn` 51, `ccpHdd` 81, the rest 0. The piece table covers CPs 0 to 995, one more than their sum (the document's final paragraph mark).
+- `FibRgFcLcb97` pairs by index (fc, lcb): 1 `Stshf` (0, 2604), 2 `PlcffndRef` (2604, 10), 3 `PlcffndTxt` (2614, 12), 6 `PlcfSed` (2626, 20), 11 `PlcfHdd` (2646, 56), 12 `PlcfBteChpx` (2702, 12), 13 `PlcfBtePapx` (2714, 52), 15 `SttbfFfn` (5385, 1064), 16 `PlcfFldMom` (2766, 22), 21 to 23 `SttbfBkmk`, `PlcfBkf`, `PlcfBkl`, 33 `Clx` (5364, 21), 46 and 47 `PlcfendRef`, `PlcfendTxt` (empty), 73 `PlfLst` (2828, 142), 74 `PlfLfo` (5208, 104). An `fc` of 0 is a valid offset; a structure is absent when its `lcb` is 0.
+- One piece, Unicode (not compressed), at byte `0x800`. LibreOffice always writes Unicode pieces; Word writes compressed pieces for text that fits Windows-1252, so the compressed path needs tests with built data.
+- The hyperlink field is `0x13 HYPERLINK "https://example.com/path?q=1" 0x01 0x14 example.com 0x15`: the `0x01` inside the instruction is field data (`sprmCFData`), not a picture. Only `0x01` characters in shown text are pictures.
+- The page break before "Second page" is the paragraph property `sprmPFPageBreakBefore` (`0x2407`), not a `0x0C` character.
+- The horizontally merged cell is one wider cell (column grid rule in `00-architecture.md`); the vertically merged cell below "Delhi" still has its own cell mark.
+- `STSHI`: 60 styles, `cbSTDBaseInFile` 10. Style 0 "Normal", 1 to 6 "Heading 1" to "Heading 6" (`sti` 1 to 6), 42 "Title" (`sti` 62).
+- Character sprms present: `sprmCFBold` `0x0835`, `sprmCFItalic` `0x0836`, `sprmCFStrike` `0x0837`, `sprmCKul` `0x2A3E`, `sprmCIco` `0x2A42`, `sprmCCv` `0x6870`, `sprmCHighlight` `0x2A0C`, `sprmCIss` `0x2A48`, `sprmCHps` `0x4A43`, `sprmCRgFtc0` `0x4A4F` (with `0x4A50`, `0x4A51` for the other script ranges), `sprmCIstd` `0x4A30`, `sprmCFSpec` `0x0855`, `sprmCPicLocation` `0x6A03`, `sprmCFData` `0x0806`, `sprmCFFldVanish` `0x0802`.
+- Paragraph sprms present: `sprmPJc80` `0x2403`, `sprmPJc` `0x2461`, `sprmPFPageBreakBefore` `0x2407`, `sprmPDyaBefore` `0xA413`, `sprmPDyaAfter` `0xA414`, `sprmPIlvl` `0x260A`, `sprmPIlfo` `0x460B`, `sprmPFInTable` `0x2416`, `sprmPFTtp` `0x2417`, `sprmPItap` `0x6649`, `sprmTDefTable` `0xD608`, `sprmTTableHeader` `0x3404`. List paragraphs carry no indent sprms: their indents come from the list level's `grpprlPapx`.
+- The first `SEPX` (at `Sed.fcSepx` 7680): `sprmSXaPage` `0xB01F` 11906, `sprmSYaPage` `0xB020` 16838, `sprmSDxaLeft` `0xB021` 1440, `sprmSDxaRight` `0xB022` 1440, `sprmSDyaTop` `0x9023` 1440, `sprmSDyaBottom` `0x9024` 1440 (A4, 2.54 cm margins).
+- FKP layout as read: a 512-byte page whose last byte is `crun`; a `ChpxFkp` has `crun + 1` FCs then `crun` one-byte offsets (×2, 0 means no properties) to `cb` + `grpprl`; a `PapxFkp` has `crun + 1` FCs then `crun` 13-byte `BxPap` entries whose first byte is the offset (×2) to a `PapxInFkp`: `cb` (if 0, the next byte `cb'` and size `2 × cb'`, else size `2 × cb − 1`), then `istd` (2 bytes) and the `grpprl`. `PlcBteChpx`/`PlcBtePapx` hold `n + 1` FCs then `n` 4-byte page numbers (low 22 bits; the page is at `pn × 512` in `WordDocument`).
