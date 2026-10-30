@@ -60,6 +60,12 @@ export interface CharProps {
   fontOther?: number;
   /** Character style (`sprmCIstd`). */
   style?: number;
+  /** `sprmCFSpec`: the character is a special one (picture, note reference). */
+  special?: boolean;
+  /** `sprmCFData`: the character is field data, not content. */
+  fieldData?: boolean;
+  /** `sprmCPicLocation`: an offset in the `Data` stream. */
+  picLocation?: number;
 }
 
 /** Paragraph properties set by sprms; lengths in twips. The `80` variants are the older sprms, which the newer ones override. */
@@ -162,6 +168,15 @@ export function applyCharSprms(props: CharProps, grpprl: Uint8Array): void {
         break;
       case Sprm.CIstd:
         props.style = u16(operand);
+        break;
+      case Sprm.CFSpec:
+        props.special = u8(operand) !== 0;
+        break;
+      case Sprm.CFData:
+        props.fieldData = u8(operand) !== 0;
+        break;
+      case Sprm.CPicLocation:
+        props.picLocation = u32(operand);
         break;
       default:
     }

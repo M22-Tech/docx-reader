@@ -282,6 +282,57 @@ test.describe('doc document', () => {
     expect(ownRequests(viewer)).toEqual([]);
   });
 
+  for (const [mode, view] of [
+    ['layout', '.dr-layout-view'],
+    ['reading', '.dr-reading-view'],
+  ] as const) {
+    test(`features.doc in ${mode} shows both images and the footnote, and the reference scrolls to it`, async ({
+      page,
+    }) => {
+      const viewer = await ViewerHarness.load(page);
+      await viewer.next('ready');
+      await viewer.send(openMessage(fixtureBase64('features.doc'), mode));
+      expect(await viewer.next('rendered')).toMatchObject({ format: 'doc', mode });
+
+      const root = page.locator(view);
+      const sources = await root.locator('img').evaluateAll((images) => images.map((img) => img.getAttribute('src')));
+      expect(sources).toHaveLength(2);
+      expect(sources[0]).toMatch(/^data:image\/png;base64,iVBORw0KGgo/);
+      expect(sources[1]).toMatch(/^data:image\/jpeg;base64,\/9j\//);
+      await expect(root.locator('.dr-placeholder')).toHaveCount(0);
+
+      const note = root.locator('.dr-note');
+      await expect(note).toHaveCount(1);
+      await expect(note).toContainText('This is footnote one, at the bottom of the page.');
+      // The notes come last in the document.
+      expect(await root.locator('.dr-notes').evaluate((el) => el === el.parentElement?.lastElementChild)).toBe(true);
+
+      expect(await page.evaluate(() => window.scrollY)).toBe(0);
+      await root.locator('.dr-noteref a').click();
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+      await expect(note).toBeInViewport();
+      expect(ownRequests(viewer)).toEqual([]);
+    });
+  }
+
+  test('after a mode switch, the footnote reference scrolls to the note in the view that is shown', async ({
+    page,
+  }) => {
+    const viewer = await ViewerHarness.load(page);
+    await viewer.next('ready');
+    await viewer.send(openMessage(fixtureBase64('features.doc'), 'layout'));
+    expect(await viewer.next('rendered')).toMatchObject({ mode: 'layout' });
+    await viewer.send({ type: 'setMode', mode: 'reading' });
+    expect(await viewer.next('rendered')).toMatchObject({ mode: 'reading' });
+
+    // The hidden Layout view still holds a note with the same id.
+    await expect(page.locator('.dr-layout-view .dr-note')).toHaveCount(1);
+    const reading = page.locator('.dr-reading-view');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await reading.locator('.dr-noteref a').click();
+    await expect(reading.locator('.dr-note')).toBeInViewport();
+  });
+
   test('minimal.doc opens in Reading directly', async ({ page }) => {
     const viewer = await ViewerHarness.load(page);
     await viewer.next('ready');

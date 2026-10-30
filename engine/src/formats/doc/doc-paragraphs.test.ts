@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Block, Inline, Paragraph, Table } from '../../model/document-model';
 import { buildBlocks, type DocFormat } from './doc-paragraphs';
+import { blipRecord, pictureData } from './doc-test-helpers';
 import type { ListLevel, ListTables } from './doc-lists';
 import { Sprm } from './doc-sprm';
 import { createStyleSheet } from './doc-styles';
@@ -340,6 +341,98 @@ describe('buildBlocks with formatting', () => {
         lists,
       });
       expect(blocks.map((b) => (b as Paragraph).list?.marker)).toEqual(['1.']);
+    });
+  });
+
+  describe('pictures and note references', () => {
+    const SPEC = sprm(Sprm.CFSpec, 1);
+    const location = (value: number) => sprm(Sprm.CPicLocation, value & 0xff, value >> 8, 0, 0);
+    const PNG = pictureData({ blip: blipRecord(0xf01e, 0x6e0, 1, [1, 2, 3]) });
+    const withData = (f: DocFormat): DocFormat => ({ ...f, data: PNG });
+    const kinds = (blocks: Block[]) =>
+      blocks.flatMap((b) =>
+        b.kind === 'paragraph' ? [b.inlines.map((i) => (i.kind === 'text' ? i.text : i.kind))] : [],
+      );
+
+    it('turns a 0x01 with sprmCFSpec and sprmCPicLocation into the picture at that location', () => {
+      const text = 'a\x01b\r';
+      const blocks = buildBlocks(text, withData(format(4, [[1, 2, [...SPEC, ...location(0)]]])));
+      expect(blocks).toEqual([
+        {
+          kind: 'paragraph',
+          inlines: [
+            { kind: 'text', text: 'a' },
+            {
+              kind: 'image',
+              widthPx: 240,
+              heightPx: 120,
+              src: { mime: 'image/png', data: Uint8Array.from([1, 2, 3]) },
+            },
+            { kind: 'text', text: 'b' },
+          ],
+        },
+      ]);
+      expect(text).toHaveLength(4);
+    });
+
+    it('drops a 0x01 without sprmCFSpec, with sprmCFData, or whose picture has mm 0', () => {
+      const noSpec = buildBlocks('a\x01b\r', withData(format(4, [[1, 2, location(0)]])));
+      const fieldData = buildBlocks(
+        'a\x01b\r',
+        withData(format(4, [[1, 2, [...SPEC, ...sprm(Sprm.CFData, 1), ...location(0)]]])),
+      );
+      const notAPicture = buildBlocks('a\x01b\r', {
+        ...format(4, [[1, 2, [...SPEC, ...location(0)]]]),
+        data: pictureData({ mm: 0 }),
+      });
+      for (const blocks of [noSpec, fieldData, notAPicture]) expect(kinds(blocks)).toEqual([['ab']]);
+    });
+
+    it('gives a placeholder for a picture when there is no Data stream, and keeps a picture inside a link', () => {
+      const text = '\x13HYPERLINK "https://x.test/"\x14\x01\x15\r';
+      const at = text.indexOf('\x01');
+      const blocks = buildBlocks(text, format(text.length, [[at, at + 1, [...SPEC, ...location(0)]]]));
+      expect(blocks).toEqual([
+        {
+          kind: 'paragraph',
+          inlines: [{ kind: 'link', href: 'https://x.test/', inlines: [{ kind: 'image', widthPx: 0, heightPx: 0 }] }],
+        },
+      ]);
+    });
+
+    it('never makes a picture of a 0x01 in a field instruction', () => {
+      const text = 'a\x13HYPERLINK "u"\x01\x14t\x15\r';
+      const blocks = buildBlocks(text, withData(format(text.length, [[17, 18, [...SPEC, ...location(0)]]])));
+      expect(JSON.stringify(blocks)).not.toContain('image');
+    });
+
+    it('leaves out a hidden picture', () => {
+      const hidden = [...SPEC, ...location(0), ...sprm(Sprm.CFVanish, 1)];
+      expect(kinds(buildBlocks('a\x01b\r', withData(format(4, [[1, 2, hidden]]))))).toEqual([['ab']]);
+    });
+
+    it('replaces the characters named by noteRefs with the reference, and leaves other 0x02 out', () => {
+      const ref = { kind: 'noteRef', noteId: 'fn1', label: '1' } as const;
+      const f = { ...format(8, []), noteRefs: new Map([[2, ref]]) };
+      const blocks = buildBlocks('ab\x02c\x02d\r', f);
+      expect(blocks[0]?.kind === 'paragraph' && blocks[0].inlines).toEqual([
+        { kind: 'text', text: 'ab' },
+        ref,
+        { kind: 'text', text: 'cd' },
+      ]);
+    });
+
+    it('lets a custom mark character stand for the reference, and never swallows a paragraph end', () => {
+      const ref = { kind: 'noteRef', noteId: 'fn1', label: '*' } as const;
+      const f = { ...format(4, []), noteRefs: new Map([[1, ref]]) };
+      const blocks = buildBlocks('a*b\r', f);
+      expect(blocks[0]?.kind === 'paragraph' && blocks[0].inlines).toEqual([
+        { kind: 'text', text: 'a' },
+        ref,
+        { kind: 'text', text: 'b' },
+      ]);
+      const mark = { ...format(2, []), noteRefs: new Map([[1, ref]]) };
+      expect(buildBlocks('a\rb\r', mark)).toHaveLength(2);
     });
   });
 });

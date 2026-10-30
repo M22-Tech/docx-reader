@@ -225,7 +225,10 @@ export function createViewer(send: (message: PageMessage) => void) {
     } catch {
       // Keep the raw fragment.
     }
-    document.getElementById(id)?.scrollIntoView();
+    // Both views stay in the page after a mode switch, so the same id can exist twice: look only in the one shown.
+    const view = session?.mode ? views[session.mode] : document.body;
+    const target = Array.from(view.querySelectorAll('[id]')).find((element) => element.id === id);
+    target?.scrollIntoView();
   }
 
   document.addEventListener('click', (event) => {

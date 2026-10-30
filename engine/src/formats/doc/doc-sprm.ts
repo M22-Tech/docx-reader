@@ -14,6 +14,7 @@ export const Sprm = {
   CIss: 0x2a48,
   CHps: 0x4a43,
   CIstd: 0x4a30,
+  CPicLocation: 0x6a03,
   CRgFtc0: 0x4a4f,
   CRgFtc2: 0x4a51,
   CCv: 0x6870,

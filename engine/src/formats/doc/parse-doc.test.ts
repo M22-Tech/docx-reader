@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { DocumentError } from '../../document-error';
-import type { Block, DocumentModel, Inline, Paragraph, Table, TextRun } from '../../model/document-model';
+import type { Block, DocumentModel, ImageInline, Inline, Paragraph, Table, TextRun } from '../../model/document-model';
 import { adapterFor } from '../registry';
 import { editStreams, FIB_OFFSET, fixture, setU16, setU32, signal } from './doc-test-helpers';
+import { parseOdt } from '../odt/parse-odt';
+import { parseRtf } from '../rtf/parse-rtf';
 import { parseDoc } from './parse-doc';
 
 const textOf = (inlines: Inline[]): string =>
@@ -73,7 +75,9 @@ describe('features.doc', () => {
           { kind: 'text', text: 'example.com', marks: { underline: true, color: '#0563c1', fontFamily: 'Calibri' } },
         ],
       },
-      { kind: 'text', text: ' and a footnote.', marks: CALIBRI },
+      { kind: 'text', text: ' and a footnote', marks: CALIBRI },
+      { kind: 'noteRef', noteId: 'fn1', label: '1' },
+      { kind: 'text', text: '.', marks: CALIBRI },
     ]);
     const json = JSON.stringify((await model).blocks);
     expect(json).not.toContain('HYPERLINK');
@@ -152,7 +156,32 @@ describe('features.doc', () => {
     const m = await model;
     expect(texts(m).join('\n')).not.toContain('Fixture header text');
     expect(texts(m).join('\n')).not.toContain('footnote one');
-    expect(m.notes).toEqual([]);
+  });
+
+  it('has the two inline images, PNG then JPEG, in their own paragraphs', async () => {
+    const images = paragraphs((await model).blocks)
+      .flatMap((p) => p.inlines)
+      .filter((i): i is ImageInline => i.kind === 'image');
+    expect(images.map((i) => [i.src?.mime, i.widthPx, i.heightPx])).toEqual([
+      ['image/png', 240, 120],
+      ['image/jpeg', 320, 200],
+    ]);
+    expect([...(images[0]?.src?.data.subarray(0, 4) ?? [])]).toEqual([0x89, 0x50, 0x4e, 0x47]);
+    expect([...(images[1]?.src?.data.subarray(0, 3) ?? [])]).toEqual([0xff, 0xd8, 0xff]);
+  });
+
+  it('has one noteRef "1" after "and a footnote", and one note with its text', async () => {
+    const m = await model;
+    const refs = paragraphs(m.blocks)
+      .flatMap((p) => p.inlines)
+      .filter((i) => i.kind === 'noteRef');
+    expect(refs).toEqual([{ kind: 'noteRef', noteId: 'fn1', label: '1' }]);
+    const paragraph = find(m, 'A link to');
+    const at = paragraph.inlines.findIndex((i) => i.kind === 'noteRef');
+    expect(paragraph.inlines[at - 1]).toMatchObject({ kind: 'text', text: ' and a footnote' });
+    expect(m.notes.map((n) => [n.id, n.label, paragraphs(n.blocks).map((p) => textOf(p.inlines))])).toEqual([
+      ['fn1', '1', ['This is footnote one, at the bottom of the page.']],
+    ]);
   });
 
   it('has the title and the headings at levels 1, 1, 2, 3, and "Second page" at 1', async () => {
@@ -327,5 +356,53 @@ describe('errors', () => {
 describe('registry', () => {
   it('has a doc adapter with both modes', () => {
     expect(adapterFor('doc')).toMatchObject({ format: 'doc', modes: ['layout', 'reading'] });
+  });
+});
+
+describe('features.doc against features.odt and features.rtf', () => {
+  /**
+   * Block kinds, heading levels, list markers and text, with images and note references shown in place. Sizes are left
+   * out: the odt stores the images' sizes in rounded centimetres (320.02 px for the doc's 320).
+   */
+  const inlineText = (inlines: Inline[]): string =>
+    inlines
+      .map((i) => {
+        switch (i.kind) {
+          case 'text':
+            return i.text;
+          case 'link':
+            return inlineText(i.inlines);
+          case 'tab':
+            return '\t';
+          case 'lineBreak':
+            return '\n';
+          case 'image':
+            return `[image ${i.src?.mime ?? 'none'}]`;
+          case 'noteRef':
+            return `[note ${i.label}]`;
+          case 'anchor':
+            return '';
+        }
+      })
+      .join('');
+  const shape = (block: Block): unknown =>
+    block.kind === 'paragraph'
+      ? ['paragraph', block.headingLevel ?? null, block.list?.marker ?? null, inlineText(block.inlines)]
+      : block.kind === 'pageBreak'
+        ? ['pageBreak']
+        : ['table', block.rows.map((row) => row.cells.map((cell) => cell.blocks.map(shape)))];
+  /** Note ids differ between the parsers, so notes are compared by label and content. */
+  const shapeOf = (model: DocumentModel) => ({
+    blocks: model.blocks.map(shape),
+    notes: model.notes.map((note) => [note.label, note.blocks.map(shape)]),
+  });
+
+  it('gives the same block kinds, heading levels, list markers, paragraph texts, images and notes', async () => {
+    const doc = shapeOf(await parseDoc(fixture('features.doc'), signal()));
+    const odt = shapeOf(await parseOdt(fixture('features.odt'), signal()));
+    const rtf = shapeOf(await parseRtf(fixture('features.rtf'), signal()));
+    expect(doc.blocks.length).toBeGreaterThan(20);
+    expect(odt).toEqual(doc);
+    expect(rtf).toEqual(doc);
   });
 });

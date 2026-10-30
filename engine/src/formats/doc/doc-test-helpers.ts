@@ -74,3 +74,56 @@ export const bytesOf16 = (text: string) => {
   for (let i = 0; i < text.length; i++) new DataView(out.buffer).setUint16(i * 2, text.charCodeAt(i), true);
   return out;
 };
+
+/** An OfficeArt record: version and instance, type, length, then the body. */
+export function officeArtRecord(version: number, instance: number, type: number, body: ArrayLike<number>): Uint8Array {
+  const out = new Uint8Array(8 + body.length);
+  const view = new DataView(out.buffer);
+  view.setUint16(0, (instance << 4) | version, true);
+  view.setUint16(2, type, true);
+  view.setUint32(4, body.length, true);
+  out.set(body, 8);
+  return out;
+}
+
+/** A BLIP record whose body is `uids` 16-byte UIDs (filled with 0xAA), a tag byte and the image. */
+export function blipRecord(type: number, instance: number, uids: number, image: ArrayLike<number>): Uint8Array {
+  return officeArtRecord(0, instance, type, [...new Array<number>(uids * 16).fill(0xaa), 0xff, ...Array.from(image)]);
+}
+
+export interface PictureSpec {
+  /** The record that holds the image; absent for a picture whose `PICF` has no OfficeArt data after it. */
+  blip?: Uint8Array;
+  mm?: number;
+  dxaGoal?: number;
+  dyaGoal?: number;
+  mx?: number;
+  my?: number;
+  /** Written after the header when `mm` is 0x66. */
+  name?: string;
+  /** Overrides the `lcb` the structure states. */
+  lcb?: number;
+}
+
+/** A `PICFAndOfficeArtData`: a `PICF`, an optional name, a shape container and an `OfficeArtFBSE` holding the BLIP. */
+export function pictureData(spec: PictureSpec): Uint8Array {
+  const mm = spec.mm ?? 0x64;
+  const name = [...(spec.name ?? '')].map((c) => c.charCodeAt(0));
+  const after: number[] = mm === 0x66 ? [name.length, ...name] : [];
+  if (spec.blip) {
+    const container = officeArtRecord(0xf, 0, 0xf004, officeArtRecord(2, 0xa, 0xf00a, [0, 0, 0, 0, 0, 0, 0, 0]));
+    const fbse = officeArtRecord(2, 6, 0xf007, [...new Array<number>(33).fill(0), 0, 0, 0, ...spec.blip]);
+    after.push(...container, ...fbse);
+  }
+  const out = new Uint8Array(68 + after.length);
+  const view = new DataView(out.buffer);
+  view.setUint32(0, spec.lcb ?? out.length, true);
+  view.setUint16(4, 68, true);
+  view.setUint16(6, mm, true);
+  view.setUint16(28, spec.dxaGoal ?? 3600, true);
+  view.setUint16(30, spec.dyaGoal ?? 1800, true);
+  view.setUint16(32, spec.mx ?? 1000, true);
+  view.setUint16(34, spec.my ?? 1000, true);
+  out.set(after, 68);
+  return out;
+}

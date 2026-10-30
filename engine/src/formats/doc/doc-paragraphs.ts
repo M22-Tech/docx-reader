@@ -1,8 +1,10 @@
-import type { Block, Inline, Link, Marks, Paragraph } from '../../model/document-model';
+import type { Block, Inline, Link, Marks, NoteRef, Paragraph } from '../../model/document-model';
+import type { Bookmark } from './doc-bookmarks';
 import { resolveFieldChunks } from './doc-fields';
 import { firstRunEndingAfter, type FkpRun } from './doc-fkp';
 import { levelOf, ListNumbering, type ListTables } from './doc-lists';
-import { marksOf, paragraphFields, resolveCharProps, resolveParaProps } from './doc-properties';
+import { readPicture } from './doc-pictures';
+import { marksOf, paragraphFields, resolveCharProps, resolveParaProps, type CharProps } from './doc-properties';
 import { prm0Sprm } from './doc-sprm';
 import { buildTables, MAX_TABLE_DEPTH, readRowDef, type FlatItem, type RowDef } from './doc-tables';
 import type { DocText, Piece } from './doc-text';
@@ -20,6 +22,12 @@ export interface DocFormat {
   fonts: readonly string[];
   /** `PlfLst` and `PlfLfo`; without them paragraphs are not list items. */
   lists?: ListTables;
+  /** The `Data` stream, where pictures are; without it a picture is a placeholder. */
+  data?: Uint8Array;
+  /** The note references of the text being built, by the CP of the reference character. */
+  noteRefs?: ReadonlyMap<number, NoteRef>;
+  /** Bookmarks starting in the text being built, sorted by CP. */
+  bookmarks?: readonly Bookmark[];
 }
 
 /** A stretch of CPs with the same formatting. */
@@ -131,6 +139,18 @@ class Formatter {
     return result;
   }
 
+  /** The resolved character properties of the character at `cp`. */
+  propsAt(cp: number, istd: number): CharProps {
+    const { chpx, styles, text } = this.format;
+    const pieceIndex = this.pieceIndexAt(cp);
+    const piece = text.pieces[pieceIndex];
+    if (!piece) return {};
+    const fc = piece.fc + (cp - piece.cpStart) * (piece.compressed ? 1 : 2);
+    const next = chpx[firstRunEndingAfter(chpx, fc)];
+    const covering = next && next.fcStart <= fc ? next : undefined;
+    return resolveCharProps(styles, istd, [covering?.grpprl ?? NO_PROPS, this.pieceProps[pieceIndex] as Uint8Array]);
+  }
+
   /** Splits `[from, to)` at every point where the character formatting changes. */
   segments(from: number, to: number, istd: number): Segment[] {
     const { chpx, styles, fonts, text } = this.format;
@@ -188,11 +208,15 @@ function sameMarks(a: Marks | undefined, b: Marks | undefined): boolean {
 
 /** A piece of paragraph content waiting for the paragraph's mark, which names its style. */
 interface Pending {
-  kind: 'text' | 'lineBreak' | 'tab';
+  /** `picture` is a `0x01` whose picture is looked up when the paragraph's style is known; `inline` holds its content. */
+  kind: 'text' | 'lineBreak' | 'tab' | 'picture' | 'inline';
   /** The CP of the first character. */
   cp: number;
   text: string;
   href: string | undefined;
+  inline?: Inline;
+  /** Stays even when its character is hidden (bookmark starts). */
+  keep?: boolean;
 }
 
 /** Gathers the inlines of one paragraph, merging neighbouring text with equal marks. */
@@ -259,9 +283,19 @@ export function buildBlocks(text: string, format?: DocFormat, cpBase = 0): Block
         ? formatter.segments(item.cp, item.cp + length, paragraphFormat?.istd ?? 0)
         : [{ from: item.cp, to: item.cp + length, dropped: false } as Segment];
       for (const segment of segments) {
-        if (segment.dropped) continue;
+        if (segment.dropped && !item.keep) continue;
         if (item.kind === 'text') {
           sink.text(item.text.slice(segment.from - item.cp, segment.to - item.cp), item.href, segment.marks);
+        } else if (item.kind === 'inline') {
+          sink.other(item.inline as Inline, item.href);
+        } else if (item.kind === 'picture') {
+          const props = formatter?.propsAt(item.cp, paragraphFormat?.istd ?? 0);
+          // Only a special character that is not field data is a picture.
+          const image =
+            props?.special && !props.fieldData && props.picLocation !== undefined
+              ? readPicture(format?.data, props.picLocation)
+              : undefined;
+          if (image) sink.other(image, item.href);
         } else {
           sink.other({ kind: item.kind }, item.href);
         }
@@ -284,6 +318,7 @@ export function buildBlocks(text: string, format?: DocFormat, cpBase = 0): Block
     });
   }
 
+  let nextBookmark = 0;
   for (const chunk of resolveFieldChunks(text)) {
     let run = '';
     let runCp = 0;
@@ -299,6 +334,26 @@ export function buildBlocks(text: string, format?: DocFormat, cpBase = 0): Block
     for (const char of chunk.text) {
       const cp = cpBase + chunk.start + offset;
       offset += char.length;
+      // Bookmarks that start here, or in text that is not shown (field instructions), go in front of this character.
+      for (let b = format?.bookmarks?.[nextBookmark]; b && b.cp <= cp; b = format?.bookmarks?.[++nextBookmark]) {
+        flush();
+        // Anchors stay out of links: their element cannot nest in one.
+        const anchor: Inline = { kind: 'anchor', id: b.name };
+        pending.push({
+          kind: 'inline',
+          cp: Math.max(b.cp, cpBase),
+          text: '',
+          href: undefined,
+          inline: anchor,
+          keep: true,
+        });
+      }
+      const noteRef = format?.noteRefs?.get(cp);
+      if (noteRef && !'\r\x07\x0c'.includes(char)) {
+        flush();
+        pending.push({ kind: 'inline', cp, text: '', href: undefined, inline: noteRef });
+        continue;
+      }
       switch (char) {
         case '\r':
           flush();
@@ -326,11 +381,15 @@ export function buildBlocks(text: string, format?: DocFormat, cpBase = 0): Block
             cellEnd: false,
           });
           break;
+        case '\x01':
+          flush();
+          if (formatter) pending.push({ kind: 'picture', cp, text: '', href: chunk.href });
+          break;
         case '\x1e':
           append(NON_BREAKING_HYPHEN, chunk.start + offset - 1);
           break;
         default:
-          // Other control characters (pictures, drawings, comment marks, optional hyphens) are dropped for now; the
+          // Other control characters (drawings, comment marks, optional hyphens, a note's own mark) are dropped; the
           // text around them is split so each run stays at consecutive CPs.
           if (char >= ' ') append(char, chunk.start + offset - char.length);
           else flush();
