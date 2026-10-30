@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Block, Inline } from '../../model/document-model';
-import { buildBlocks } from './doc-paragraphs';
+import { buildBlocks, type DocFormat } from './doc-paragraphs';
+import { Sprm } from './doc-sprm';
+import { createStyleSheet } from './doc-styles';
 
 /** Paragraph text with [tab], [br] and {link: text} markers; page breaks are "---". */
 function show(blocks: Block[]): string[] {
@@ -69,5 +71,115 @@ describe('buildBlocks', () => {
   it('starts a new link for a second field', () => {
     const blocks = buildBlocks('\x13HYPERLINK "#a"\x14x\x15 \x13HYPERLINK "#b"\x14y\x15\r');
     expect(show(blocks)).toEqual(['{#a: x} {#b: y}']);
+  });
+});
+
+describe('buildBlocks with formatting', () => {
+  const FC = 0x800;
+  const fc = (cp: number) => FC + cp * 2;
+  const bytes = (...values: number[]) => Uint8Array.from(values);
+  const sprm = (id: number, ...operand: number[]) => [id & 0xff, id >> 8, ...operand];
+  const normal = createStyleSheet([
+    {
+      istd: 0,
+      sti: 0,
+      kind: 'paragraph',
+      name: 'Normal',
+      paraGrpprl: new Uint8Array(0),
+      // 11 pt, so runs carry only the marks a test sets.
+      charGrpprl: bytes(...sprm(Sprm.CHps, 22, 0)),
+    },
+  ]);
+  /** Character runs and paragraph runs by CP range, over one Unicode piece starting at CP 0. */
+  function format(
+    length: number,
+    chars: [number, number, number[]][],
+    paras: [number, number, number[]][] = [],
+  ): DocFormat {
+    const piece = { cpStart: 0, cpEnd: length, fc: FC, compressed: false, prm: 0 };
+    return {
+      text: { prcs: [], pieces: [piece], cpEnd: length, text: () => '', cpToFc: (cp) => fc(cp) },
+      chpx: chars.map(([from, to, grpprl]) => ({ fcStart: fc(from), fcEnd: fc(to), grpprl: bytes(...grpprl) })),
+      papx: paras.map(([from, to, grpprl]) => ({
+        fcStart: fc(from),
+        fcEnd: fc(to),
+        grpprl: bytes(...grpprl),
+        istd: 0,
+      })),
+      styles: normal,
+      fonts: [],
+    };
+  }
+  const runs = (blocks: Block[]) =>
+    blocks.flatMap((b) =>
+      b.kind === 'paragraph'
+        ? b.inlines.map((i) => (i.kind === 'text' ? `${i.text}${i.marks?.bold ? '*' : ''}` : i.kind))
+        : ['---'],
+    );
+  const BOLD = sprm(Sprm.CFBold, 1);
+
+  it('splits runs at every change of character properties', () => {
+    const blocks = buildBlocks(
+      'one two\r',
+      format(8, [
+        [0, 4, []],
+        [4, 7, BOLD],
+        [7, 8, []],
+      ]),
+    );
+    expect(runs(blocks)).toEqual(['one ', 'two*']);
+  });
+
+  it('keeps marks aligned with their characters across field instructions and dropped control characters', () => {
+    const text = 'a\x13X\x14b\x15\x01c\r';
+    const blocks = buildBlocks(
+      text,
+      format(text.length, [
+        [0, 7, []],
+        [7, 8, BOLD],
+        [8, 9, []],
+      ]),
+    );
+    expect(runs(blocks)).toEqual(['ab', 'c*']);
+  });
+
+  it('drops hidden text, tabs and line breaks, and a paragraph that is hidden entirely', () => {
+    const text = 'a\tb\x0bc\rgone\rkept\r';
+    const hidden = sprm(Sprm.CFVanish, 1);
+    const blocks = buildBlocks(
+      text,
+      format(text.length, [
+        [1, 2, hidden],
+        [3, 4, hidden],
+        [6, 11, hidden],
+      ]),
+    );
+    expect(runs(blocks)).toEqual(['abc', 'kept']);
+  });
+
+  it('keeps an empty paragraph whose mark is not hidden', () => {
+    const blocks = buildBlocks('gone\r', format(5, [[0, 4, sprm(Sprm.CFRMarkDel, 1)]]));
+    expect(blocks).toEqual([{ kind: 'paragraph', inlines: [] }]);
+  });
+
+  it('adds a page break before a paragraph with sprmPFPageBreakBefore, but not at the start', () => {
+    const pagebb = sprm(Sprm.PFPageBreakBefore, 1);
+    const blocks = buildBlocks(
+      'one\rtwo\r',
+      format(
+        8,
+        [],
+        [
+          [0, 4, pagebb],
+          [4, 8, pagebb],
+        ],
+      ),
+    );
+    expect(runs(blocks)).toEqual(['one', '---', 'two']);
+  });
+
+  it('puts paragraph properties on the paragraph found by its mark', () => {
+    const blocks = buildBlocks('one\rtwo\r', format(8, [], [[4, 8, sprm(Sprm.PJc, 1)]]));
+    expect(blocks.map((b) => (b.kind === 'paragraph' ? b.align : undefined))).toEqual([undefined, 'center']);
   });
 });

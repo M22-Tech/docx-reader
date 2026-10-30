@@ -8,6 +8,12 @@ export interface FieldChunk {
   href?: string;
 }
 
+/** A shown chunk with where it starts in the input, so a caller can look up each character's formatting. */
+export interface PositionedChunk extends FieldChunk {
+  /** Index in the input of the chunk's first character; the chunk's characters are consecutive in the input. */
+  start: number;
+}
+
 interface Frame {
   inResult: boolean;
   instruction: string;
@@ -26,9 +32,23 @@ function innermost(stack: Frame[], test: (frame: Frame) => boolean): Frame | und
  */
 export function resolveFields(text: string): FieldChunk[] {
   const chunks: FieldChunk[] = [];
+  for (const { text: shown, href } of resolveFieldChunks(text)) {
+    const last = chunks[chunks.length - 1];
+    if (last && last.href === href) last.text += shown;
+    else chunks.push(href === undefined ? { text: shown } : { text: shown, href });
+  }
+  return chunks;
+}
+
+/** Like `resolveFields`, with each chunk's start index in `text`; characters dropped from the middle split a chunk. */
+export function resolveFieldChunks(text: string): PositionedChunk[] {
+  const chunks: PositionedChunk[] = [];
   const stack: Frame[] = [];
+  let index = 0;
 
   for (const char of text) {
+    const at = index;
+    index += char.length;
     if (char === FIELD_BEGIN) {
       stack.push({ inResult: false, instruction: '' });
     } else if (char === FIELD_SEPARATOR) {
@@ -47,8 +67,8 @@ export function resolveFields(text: string): FieldChunk[] {
       } else {
         const href = innermost(stack, (frame) => frame.href !== undefined)?.href;
         const last = chunks[chunks.length - 1];
-        if (last && last.href === href) last.text += char;
-        else chunks.push(href === undefined ? { text: char } : { text: char, href });
+        if (last && last.href === href && last.start + last.text.length === at) last.text += char;
+        else chunks.push(href === undefined ? { text: char, start: at } : { text: char, href, start: at });
       }
     }
   }

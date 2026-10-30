@@ -258,6 +258,14 @@ test.describe('doc document', () => {
     const layout = page.locator('.dr-layout-view');
     await expect(layout.getByText('Heading one')).toBeVisible();
     await expect(layout.getByText('Fixture header text')).toHaveCount(0);
+    expect(await layout.getByText('red', { exact: true }).evaluate((el) => getComputedStyle(el).color)).toBe(
+      'rgb(192, 0, 0)',
+    );
+    await expect(layout.locator('hr.dr-page-break')).toHaveCount(1);
+    expect(await layout.locator('hr.dr-page-break').evaluate((hr) => getComputedStyle(hr).borderTopStyle)).toBe(
+      'dashed',
+    );
+    expect(await page.locator('meta[name="viewport"]').getAttribute('content')).toContain('width=794');
 
     await viewer.send({ type: 'setMode', mode: 'reading' });
     expect(await viewer.next('rendered')).toMatchObject({ format: 'doc', mode: 'reading' });

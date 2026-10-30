@@ -3,7 +3,11 @@ import { timed } from '../../logger';
 import type { DocumentModel } from '../../model/document-model';
 import { openDocContainer } from './doc-container';
 import { FcLcb, readFib } from './doc-fib';
+import { readChpxRuns, readPapxRuns } from './doc-fkp';
+import { readFontNames } from './doc-fonts';
 import { buildBlocks } from './doc-paragraphs';
+import { readPageSetup } from './doc-section';
+import { createStyleSheet, readStyleSheet } from './doc-styles';
 import { readDocText } from './doc-text';
 
 /** Parses a Word 97 to 2003 file into the document model. */
@@ -17,6 +21,22 @@ export async function parseDoc(bytes: Uint8Array, signal: AbortSignal): Promise<
     if (!clx) throw new DocumentError('corrupt', 'The file has no Clx.');
     const text = readDocText(wordDocument, table, clx);
     signal.throwIfAborted();
-    return { blocks: buildBlocks(text.text(0, fib.ccpText)), notes: [] };
+
+    const chpxPair = fib.pair(FcLcb.PlcfBteChpx);
+    const papxPair = fib.pair(FcLcb.PlcfBtePapx);
+    const stshPair = fib.pair(FcLcb.Stshf);
+    const fontsPair = fib.pair(FcLcb.SttbfFfn);
+    const sedPair = fib.pair(FcLcb.PlcfSed);
+    const format = {
+      text,
+      chpx: chpxPair ? readChpxRuns(wordDocument, table, chpxPair) : [],
+      papx: papxPair ? readPapxRuns(wordDocument, table, papxPair) : [],
+      styles: stshPair ? readStyleSheet(table, stshPair) : createStyleSheet([]),
+      fonts: fontsPair ? readFontNames(table, fontsPair) : [],
+    };
+    signal.throwIfAborted();
+
+    const page = sedPair ? readPageSetup(wordDocument, table, sedPair) : undefined;
+    return { ...(page ? { page } : {}), blocks: buildBlocks(text.text(0, fib.ccpText), format), notes: [] };
   });
 }
