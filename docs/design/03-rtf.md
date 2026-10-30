@@ -20,15 +20,15 @@ RTF is text: control words, groups and plain text. The parser has two stages: a 
 |---|---|
 | `\fonttbl` | font index → name and charset |
 | `\colortbl` | colour index → `#rrggbb`; the empty first entry is "auto" |
-| `\stylesheet` | style index → name, `\outlinelevelN`, and the style's properties (applied when a paragraph uses `\sN`) |
+| `\stylesheet` | style index → name, `\sbasedonN`, `\outlinelevelN`, and the style's properties (applied when a paragraph uses `\sN`); headings follow the rule in `00-architecture.md` |
 | `\info` | `\title` → model title; the rest skipped |
 | `\listtable`, `\listoverridetable` | skipped; markers come from `\listtext` |
-| `\listtext`, `\pntext` | the marker text for the paragraph; `\ilvlN` (or the `\pnlvl` value) gives the level; ordered unless the marker is a bullet character |
+| `\listtext`, `\pntext` | the marker text for the paragraph, trimmed of spaces and the trailing `\tab`; `\ilvlN` (or the `\pnlvl` value) gives the level; ordered unless the marker is a bullet character (•, ◦, ▪, ■, ●, ○, -, or a Symbol or Wingdings character, mapped to • ◦ ▪) |
 | `\field` | `\fldinst` read for `HYPERLINK "url"` (and `\l "bookmark"`); `\fldrslt` content emitted, as a link when the instruction is one |
 | `\pict` | see Images |
 | `\shppict` | used; the sibling `\nonshppict` is skipped |
 | `\object` | only its `\result` is used |
-| `\footnote` | a `Note`; its reference is the `\chftn` (or the custom text) just before it. `\ftnalt` makes it an endnote |
+| `\footnote` | a `Note`; its reference is the `\chftn` (or the custom text) just before it, numbered in order. A `\chftn` inside the footnote's own text repeats the label and is dropped. `\ftnalt` makes it an endnote |
 | `\bkmkstart` | an `anchor` with the bookmark name |
 | `\header*`, `\footer*`, `\annotation`, `\atnid`, `\shp`, `\shpinst`, `\do`, `\themedata`, `\colorschememapping`, `\latentstyles`, `\datastore`, `\xmlnstbl`, `\rsidtbl`, `\generator`, `\pgdsctbl` | skipped |
 | any `{\* ...}` destination not listed | skipped |
@@ -44,7 +44,8 @@ RTF is text: control words, groups and plain text. The parser has two stages: a 
 ## Tables
 
 - `\trowd` starts a row definition: `\cellxN` (right boundaries in twips), with per-cell `\clmgf`/`\clmrg` (horizontal merge) and `\clvmgf`/`\clvmrg` (vertical merge) before each `\cellx`, `\clcbpatN` (background), `\trhdr` (header row).
-- Paragraphs with `\intbl` belong to the current cell; `\cell` ends a cell, `\row` ends the row. Rows in a row form one table until a paragraph without `\intbl`.
+- Paragraphs with `\intbl` belong to the current cell; `\cell` ends a cell, `\row` ends the row. Consecutive rows form one table until a paragraph without `\intbl`. The row definition (`\trowd` and its cell properties) comes before the row's cells; Word also repeats it just before `\row`, LibreOffice doesn't. The definition read last before `\row` applies to that row.
+- Column spans come from the `\cellx` boundaries (the column grid rule in `00-architecture.md`); `\clmgf`/`\clmrg` are also honoured. Vertical merges from `\clvmgf`/`\clvmrg` become `rowSpan`.
 - Nested tables (`\itapN`, `\nestcell`, `\nestrow`, `\nesttableprops`) are built as tables inside cells.
 
 ## Images

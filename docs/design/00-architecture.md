@@ -50,7 +50,8 @@ Mapping rules shared by all parsers:
 - Lengths are converted to millimetres for page and indent values, points for spacing and font size, CSS pixels at 96 dpi for image sizes.
 - Colours are `#rrggbb`; "auto" colours are left unset.
 - A run's marks are only the ones that differ from defaults; renderers merge adjacent runs with equal marks.
-- Headings: a paragraph is a heading when its style is a built-in heading style or its outline level is 1 to 6 (levels 7 to 9 become 6).
+- Headings: a paragraph is a heading when its outline level is 1 to 6 (levels 7 to 9 become 6), or else when its style, or a style it is based on, is named "Heading 1" to "Heading 9" (case-insensitive; 7 to 9 become 6), "Title" (level 1) or "Subtitle" (level 2), the same mapping docx Reading uses. Files converted by LibreOffice and Word often carry only the style name.
+- Table columns: when rows give their cells as right-hand boundaries (RTF `\cellx`, doc `rgdxaCenter`), the table's columns are the sorted set of all boundaries across its rows, and a cell spans as many columns as its boundaries cover. That is how a horizontally merged cell is usually written.
 - Unknown or unsupported content is skipped; an image whose format the page can't show keeps its size with no `src` (placeholder).
 
 ## Model renderers

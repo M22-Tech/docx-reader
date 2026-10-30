@@ -127,6 +127,61 @@ test.describe('docx document', () => {
   });
 });
 
+test.describe('odt document', () => {
+  const ownRequests = (viewer: ViewerHarness) => {
+    const own = pathToFileURL(VIEWER_PATH).href;
+    return viewer.requests.filter((url) => url !== own && !url.startsWith('data:') && !url.startsWith('blob:'));
+  };
+
+  test('features.odt opens in Layout, then switches to Reading', async ({ page }) => {
+    const viewer = await ViewerHarness.load(page);
+    await viewer.next('ready');
+    await viewer.send(openMessage(fixtureBase64('features.odt'), 'layout'));
+
+    expect(await viewer.next('rendered')).toMatchObject({
+      format: 'odt',
+      mode: 'layout',
+      otherModeAvailable: true,
+    });
+    const layout = page.locator('.dr-layout-view');
+    await expect(layout.getByText('Heading one')).toBeVisible();
+    await expect(layout.getByText('This is footnote one, at the bottom of the page.')).toBeVisible();
+    expect(await page.locator('meta[name="viewport"]').getAttribute('content')).toContain('width=794');
+    await expect(layout.locator('hr.dr-page-break')).toHaveCount(1);
+    expect(await layout.locator('hr.dr-page-break').evaluate((hr) => getComputedStyle(hr).borderTopStyle)).toBe(
+      'dashed',
+    );
+    const sources = await layout.locator('img').evaluateAll((images) => images.map((img) => img.getAttribute('src')));
+    expect(sources).toHaveLength(2);
+    for (const src of sources) expect(src).toMatch(/^data:image\/(png|jpeg);base64,/);
+
+    await viewer.send({ type: 'setMode', mode: 'reading' });
+    expect(await viewer.next('rendered')).toMatchObject({ format: 'odt', mode: 'reading' });
+    const reading = page.locator('.dr-reading-view');
+    for (const [level, name] of [
+      [1, 'Heading one'],
+      [2, 'Heading two'],
+      [3, 'Heading three'],
+    ] as const) {
+      await expect(reading.getByRole('heading', { name, level })).toBeVisible();
+    }
+    expect(await reading.locator('[style]').count()).toBe(0);
+
+    await reading.getByText('example.com').click();
+    expect(await viewer.next('openLink')).toEqual({ type: 'openLink', href: 'https://example.com/path?q=1' });
+    expect(ownRequests(viewer)).toEqual([]);
+  });
+
+  test('minimal.odt opens in Reading directly', async ({ page }) => {
+    const viewer = await ViewerHarness.load(page);
+    await viewer.next('ready');
+    await viewer.send(openMessage(fixtureBase64('minimal.odt')));
+    expect(await viewer.next('rendered')).toMatchObject({ format: 'odt', mode: 'reading' });
+    await expect(readingText(page).getByText('Hello, reader.')).toBeVisible();
+    expect(ownRequests(viewer)).toEqual([]);
+  });
+});
+
 test.describe('links', () => {
   const paragraphs = Array.from({ length: 80 }, (_, i) => `<p>Filler paragraph ${i}</p>`).join('');
   const html = `<html><body>
