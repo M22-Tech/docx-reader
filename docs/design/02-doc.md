@@ -37,6 +37,10 @@ The parser is split into stages, each a pure function with its own tests: contai
 | `0x1F` | optional hyphen | dropped |
 | `0x28` with `sprmCSymbol` | symbol from a symbol font | the symbol's character code, mapped from Symbol or Wingdings to Unicode where a mapping exists, otherwise dropped |
 
+- A CP is one UTF-16 unit, so a CP is an index into the string a text range decodes to (surrogates and lone surrogates included). A piece that lies outside `WordDocument`, CPs that do not start at 0 or go backwards, and a text range outside the pieces are `corrupt`; an empty piece is allowed.
+- Errors are reported in the order of the checks: `wIdent`, `nFib` and the encryption flags are read before the table stream is looked for, so a Word 95 file (which has no table stream) gives `unsupported_version`, not `corrupt`.
+- Until tables are read, `0x07` ends a paragraph only when it has content: the row-end mark, and an empty cell, give no paragraph (the file's formatting is needed to tell them apart). `0x0C` ends the paragraph only when it has content, then adds the `pageBreak` block, so a section break after a paragraph mark does not add an empty paragraph. Other control characters below U+0020 are dropped.
+
 ## Formatting
 
 - **Character properties**: `PlcBteChpx` lists the FKP pages (512 bytes each, in `WordDocument`) of type `ChpxFkp`. Each page maps FC ranges to a `Chpx` (a `grpprl`, a list of property modifiers called sprms). **Paragraph properties**: `PlcBtePapx` and `PapxFkp` pages map FC ranges (ending at paragraph marks) to `PapxInFkp`: a style index (`istd`) and a `grpprl`.
@@ -72,7 +76,8 @@ The parser is split into stages, each a pure function with its own tests: contai
 ## Fields
 
 - `0x13` instruction `0x14` result `0x15`, possibly nested. The parser keeps a stack. Only the result (between the separator and the end) is shown; a field with no separator shows nothing.
-- `HYPERLINK "url"` instructions turn the result into a `link`; the `\l "bookmark"` switch makes it `#bookmark`. `PAGEREF`, `REF`, `TOC` and the rest show their result as text.
+- A character is shown only when every open field is in its result; otherwise it belongs to the instruction of the innermost open field still in its instruction (so a field nested in an instruction, like `REF`, adds its result to it). A second separator, an end with no begin and a begin with no end are dropped. A link covers the result of its field; inside nested hyperlinks the innermost wins. Field data (`0x01` in an instruction) is dropped with the instruction, and a field spanning paragraphs gives one link per paragraph.
+- `HYPERLINK "url"` instructions turn the result into a `link`; the `\l "bookmark"` switch makes it `#bookmark` (`url \l "bookmark"` gives `url#bookmark`); the `\o` and `\t` switches take an argument that is ignored; quoted text reads `\\` and `\"` as escapes. A HYPERLINK with no target is not a link. `PAGEREF`, `REF`, `TOC` and the rest show their result as text.
 
 ## Tables
 

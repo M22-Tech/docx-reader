@@ -243,6 +243,42 @@ test.describe('rtf document', () => {
   });
 });
 
+test.describe('doc document', () => {
+  const ownRequests = (viewer: ViewerHarness) => {
+    const own = pathToFileURL(VIEWER_PATH).href;
+    return viewer.requests.filter((url) => url !== own && !url.startsWith('data:') && !url.startsWith('blob:'));
+  };
+
+  test('features.doc opens in Layout, then switches to Reading', async ({ page }) => {
+    const viewer = await ViewerHarness.load(page);
+    await viewer.next('ready');
+    await viewer.send(openMessage(fixtureBase64('features.doc'), 'layout'));
+
+    expect(await viewer.next('rendered')).toMatchObject({ format: 'doc', mode: 'layout', otherModeAvailable: true });
+    const layout = page.locator('.dr-layout-view');
+    await expect(layout.getByText('Heading one')).toBeVisible();
+    await expect(layout.getByText('Fixture header text')).toHaveCount(0);
+
+    await viewer.send({ type: 'setMode', mode: 'reading' });
+    expect(await viewer.next('rendered')).toMatchObject({ format: 'doc', mode: 'reading' });
+    const reading = page.locator('.dr-reading-view');
+    await expect(reading.getByText('Heading one')).toBeVisible();
+
+    await reading.getByText('example.com').click();
+    expect(await viewer.next('openLink')).toEqual({ type: 'openLink', href: 'https://example.com/path?q=1' });
+    expect(ownRequests(viewer)).toEqual([]);
+  });
+
+  test('minimal.doc opens in Reading directly', async ({ page }) => {
+    const viewer = await ViewerHarness.load(page);
+    await viewer.next('ready');
+    await viewer.send(openMessage(fixtureBase64('minimal.doc')));
+    expect(await viewer.next('rendered')).toMatchObject({ format: 'doc', mode: 'reading' });
+    await expect(readingText(page).getByText('Hello, reader.')).toBeVisible();
+    expect(ownRequests(viewer)).toEqual([]);
+  });
+});
+
 test.describe('links', () => {
   const paragraphs = Array.from({ length: 80 }, (_, i) => `<p>Filler paragraph ${i}</p>`).join('');
   const html = `<html><body>

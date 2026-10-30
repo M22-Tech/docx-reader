@@ -1,4 +1,5 @@
 import type { Format, FormatAdapter } from './format-adapter';
+import { parseDoc } from './doc/parse-doc';
 import { docxAdapter } from './docx/docx-adapter';
 import { htmlAdapter } from './html/html-adapter';
 import { createModelAdapter } from './model-adapter';
@@ -6,6 +7,7 @@ import { parseOdt } from './odt/parse-odt';
 import { parseRtf } from './rtf/parse-rtf';
 
 const adapters: Partial<Record<Format, FormatAdapter>> = {
+  doc: createModelAdapter('doc', parseDoc),
   docx: docxAdapter,
   html: htmlAdapter,
   odt: createModelAdapter('odt', parseOdt),

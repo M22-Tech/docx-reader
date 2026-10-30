@@ -12,6 +12,7 @@ const samplesWith = (extension: string) =>
 const docx = samplesWith('.docx');
 const odt = samplesWith('.odt');
 const rtf = samplesWith('.rtf');
+const doc = samplesWith('.doc');
 
 test.describe('docx samples', () => {
   test.skip(docx.length === 0, 'no .docx files in samples/');
@@ -59,6 +60,23 @@ test.describe('rtf samples', () => {
       expect(await viewer.next('rendered')).toMatchObject({ format: 'rtf', mode: 'layout' });
       await viewer.send({ type: 'setMode', mode: 'reading' });
       expect(await viewer.next('rendered')).toMatchObject({ format: 'rtf', mode: 'reading' });
+      expect((await viewer.messages()).filter((m) => m.type === 'error')).toEqual([]);
+    });
+  });
+});
+
+test.describe('doc samples', () => {
+  test.skip(doc.length === 0, 'no .doc files in samples/');
+
+  doc.forEach((file, index) => {
+    test(`sample ${index + 1} renders in both modes`, async ({ page }) => {
+      const base64 = readFileSync(resolve(SAMPLES, file)).toString('base64');
+      const viewer = await ViewerHarness.load(page);
+      await viewer.next('ready');
+      await viewer.send(openMessage(base64, 'layout'));
+      expect(await viewer.next('rendered')).toMatchObject({ format: 'doc', mode: 'layout' });
+      await viewer.send({ type: 'setMode', mode: 'reading' });
+      expect(await viewer.next('rendered')).toMatchObject({ format: 'doc', mode: 'reading' });
       expect((await viewer.messages()).filter((m) => m.type === 'error')).toEqual([]);
     });
   });
