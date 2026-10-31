@@ -83,12 +83,6 @@ fi
 if $has_app; then
   step "App: installing dependencies"
   (cd app && install_deps)
-  step "App: config files"
-  for example in app/config/*.example.json; do
-    [ -e "$example" ] || continue
-    target="${example%.example.json}.json"
-    if [ -f "$target" ]; then echo "kept $target"; else cp "$example" "$target"; echo "created $target from $(basename "$example")"; fi
-  done
   if grep -q '"engine:sync"' app/package.json; then
     step "App: copying the viewer into the app"
     (cd app && npm run engine:sync)

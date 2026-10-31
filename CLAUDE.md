@@ -1,12 +1,12 @@
-# Docx Reader: conventions for contributors and Claude Code
+# DocX Reader: conventions for contributors and Claude Code
 
-Docx Reader is an offline document reader: an Expo app (`app/`) that shows documents through a web view running the document engine (`engine/`). Product behaviour lives in `docs/spec/`; how the app and each parser are built lives in `docs/design/`. Read the spec and design files your task names before writing code. This file lists the conventions every change follows.
+DocX Reader is an offline document reader: an Expo app (`app/`) that shows documents through a web view running the document engine (`engine/`). Product behaviour lives in `docs/spec/`; how the app and each parser are built lives in `docs/design/`. Read the spec and design files your task names before writing code. This file lists the conventions every change follows.
 
 ## Stack
 
 - Node 24 (pinned in `.nvmrc`), TypeScript 6.0 in strict mode in both packages. Every `package.json` (root, `engine/`, `app/`) declares `"engines": { "node": ">=24" }` and `"devEngines": { "packageManager": { "name": "npm", "version": ">=11.0.0", "onFail": "warn" } }` (a range, not an exact pin, so nub and corepack users get a recent npm without a warning). Two independent npm packages (`engine/`, `app/`), each with its own `package.json` and lockfile; no workspaces. The root `package.json` only declares the Node and npm versions and the `setup` script; it has no dependencies.
 - Engine: Vite 8 with `vite-plugin-singlefile` (one self-contained `viewer.html`), Vitest 5 with jsdom for unit tests, Playwright for rendering tests of the built viewer in Chromium. Libraries: `docx-preview` (docx Layout), `mammoth` (docx Reading), `jszip` (zip containers), `cfb` (the .doc container), `dompurify` (every HTML that reaches the page). The .doc, .rtf and .odt parsers are our own code.
-- App: Expo SDK 58 (React Native 0.88, React 19.3), Expo Router, `react-native-webview`, `expo-file-system`, `expo-document-picker`, `expo-share-intent`, `expo-crypto`, `@react-native-async-storage/async-storage`, `lucide-react-native` with `react-native-svg`, fonts from `@expo-google-fonts/*`, zod for config and stored data. jest-expo for unit tests.
+- App: Expo SDK 58 (React Native 0.88, React 19.3), Expo Router, `react-native-webview`, `expo-file-system`, `expo-document-picker`, `expo-share-intent`, `expo-crypto`, `@react-native-async-storage/async-storage`, `lucide-react-native` with `react-native-svg`, `expo-font` with `@expo-google-fonts/arimo` (the app font), zod for stored data. jest-expo for unit tests.
 - Exact versions in `package.json` (no `^` or `~`). Native app dependencies are added with `npx expo install` so they match SDK 58, then pinned. Don't add a dependency the task doesn't name. If one is really needed, stop and explain why.
 
 ## Layout
@@ -29,8 +29,9 @@ app/
   src/components/ui/     primitives (icon-button, card, ...)
   src/components/<feature>/
   src/viewer/            the web view wrapper and bridge client; generated/viewer-html.ts (gitignored, written by `npm run engine:sync`)
-  src/config/            config schemas and loaders
-  config/                *.example.json (committed) and the real *.json files (gitignored)
+  src/config/            fixed values (constants.ts)
+  src/theme/             colours, font and spacing from docs/spec/04-look-and-settings.md
+  assets/brand/          icon.png (launcher and splash) and the two wordmarks, transparent (from the brand slides; don't regenerate)
   plugins/               Expo config plugins
 fixtures/                public test documents (committed) and make-fixtures.mjs
 samples/                 private documents for manual checks (gitignored)
@@ -63,9 +64,7 @@ android-env.sh           runs a command with JAVA_HOME (a JDK 17) and ANDROID_HO
 
 ## Config
 
-- Every configurable value (branding, limits, defaults) lives in JSON under `app/config/`: a committed `<name>.example.json` and a gitignored `<name>.json` copied from it. Loaders validate with zod and fall back to the example file when the real one is missing (a build server only has what is in git).
-- Never hardcode a value that config provides.
-- Config files carry no comments, only keys and values, with blank lines grouping related keys. Explanations go in `app/README.md`.
+- This project keeps things fixed: there are no config files. The brand (name, icon, colours, font) and the limits and defaults are constants, in `app/src/theme/` and `app/src/config/constants.ts`, with the values in `docs/spec/04-look-and-settings.md`. Every other file imports them from there; never repeat a value.
 - There are no secrets and no env files: the app talks to no server.
 
 ## Logging
@@ -76,7 +75,8 @@ android-env.sh           runs a command with JAVA_HOME (a JDK 17) and ANDROID_HO
 
 ## UI
 
-- Two colours only, `ink` and `paper`, from the brand config. Other shades are ink at an opacity. Nothing relies on colour alone. This applies to the app's own screens and to Reading mode; Layout mode shows the document's own colours.
+- Colours from `app/src/theme/`: background, text and accent for light and dark (`docs/spec/04-look-and-settings.md`). Other shades are the text colour at an opacity; the accent only for the spinner, focus outlines, a selected option and a pressed button. Nothing relies on colour alone. Reading mode gets the background and text colours (as `paper` and `ink`); Layout mode shows the document's own colours.
+- Font: Arimo (regular and bold) on every app screen, loaded at build time through the `expo-font` config plugin.
 - Body text at least 16 px, font weight at least 400, borders at least 1.5 px, no shadows or gradients, touch targets at least 48 dp (Android guideline).
 - Feedback: a pressed state on every button, a spinner while anything loads, errors shown inline where they happen. No toasts.
 - Buttons show an icon (`lucide-react-native`), not text. Every icon button has an accessibility label; when a task names a button ("Open file"), that name is its label. Text stays only where an icon alone can't say it: confirmation dialogs.

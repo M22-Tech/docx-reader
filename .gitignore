@@ -15,8 +15,6 @@ engine/test-results/
 app/.expo/
 app/android/
 app/ios/
-app/config/*.json
-!app/config/*.example.json
 app/src/viewer/generated/
 *.jks
 *.keystore

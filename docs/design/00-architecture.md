@@ -16,7 +16,7 @@ The page is built once with Vite into a single HTML file with all scripts and st
 2. **Private copy.** The app copies the file into its own storage with `expo-file-system` (`File.copy`): `<documents>/recent/<id>.<ext>` when recent files are kept, `<cache>/open/<id>.<ext>` otherwise. The copy happens before anything else, because the source app's read permission can expire as soon as the activity changes. `id` is a random base36 string. The SHA-256 of the bytes (`expo-crypto`) is stored with the recent entry to spot the same file opened again.
 3. **Viewer screen.** The web view loads the page, which posts `ready`. The app reads the copy as base64 and posts `open` with the name, the bytes, the mode and the settings. Files over `largeFileWarningMb` show the warning line from the spec meanwhile.
 4. **Render.** The page decodes the base64 to a `Uint8Array`, calls `detect()`, picks the adapter and renders the mode. It then posts `rendered` (format, mode, `durationMs`, whether the other mode is available) or `error` (a code from the spec and a message).
-5. **Timeout and crashes.** The app starts a timer when it posts `open` (`renderTimeoutSeconds`). If no answer comes in time it shows `timeout`. If the web view's renderer process dies (`onRenderProcessGone`, usually out of memory) it shows `too_large` and offers back.
+5. **Timeout and crashes.** The app starts a timer when it posts `open` (the render timeout in `04-look-and-settings.md`). If no answer comes in time it shows `timeout`. If the web view's renderer process dies (`onRenderProcessGone`, usually out of memory) it shows `too_large` and offers back.
 
 ## Switching modes
 
