@@ -14,7 +14,7 @@ The brand is fixed for this app (no brand config file); it comes from the "DocX 
 | Light | `#FFFFFF` | `#262626` | `#065591` | `#065591` |
 | Dark | `#262626` | `#FFFFFF` | `#1F87D6` | `#1F87D6` |
 
-- Font: Arimo (regular and bold) for every app screen, bundled with the app; the wordmark uses it too. Reading mode uses the device's serif or sans-serif font instead, so documents in any script display.
+- Font: Arimo (regular and bold) for every app screen, bundled with the app; the wordmark uses it too. Rendered mode uses the device's serif or sans-serif font instead, so documents in any script display.
 
 ## Design
 
@@ -35,11 +35,11 @@ The brand is fixed for this app (no brand config file); it comes from the "DocX 
 Saved on the device and applied at once:
 
 - **Theme**: light or dark. Until one is chosen the app follows the device setting; there is no "system" option. It is switched in the settings card, which shows the current mode next to the toggle; there is no theme button in the home header.
-- **Default mode**: Layout or Reading (default Layout). Used when a document opens.
-- **Reading text**: font style serif or sans (default sans) with each option previewed in its own font, and the text size (`03-viewer.md`), with a sample line.
+- **Default mode**: Raw or Rendered (default Raw). Used when a document opens, for every format.
+- **Text**: font style serif or sans (default sans) with each option previewed in its own font, and the text size (`03-viewer.md`), with a sample line. Used in Rendered mode; the size also applies to source text in Raw mode.
 - **Recent files**: "Keep recent files" on or off (default on; off clears them, after a confirmation) and "Clear recent files".
 - **About**: app name, version, "Your documents never leave this phone." and a link-card "Open-source licences" that opens a screen listing each library with its licence text, bundled with the app.
 
 ## Fixed values
 
-Limits and defaults are constants in the app (`app/src/config/constants.ts`), not a config file: large file warning 30 MB, at most 20 recent files, default mode Layout, reading text size 18 px (one of the sizes in `03-viewer.md`), render timeout 20 seconds.
+Limits and defaults are constants in the app (`app/src/config/constants.ts`), not a config file: large file warning 30 MB, at most 20 recent files, default mode Raw, text size 18 px (one of the sizes in `03-viewer.md`), render timeout 20 seconds.

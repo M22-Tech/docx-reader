@@ -76,8 +76,6 @@ if [ -f engine/package.json ]; then
     step "Engine: installing Chromium for rendering tests"
     (cd engine && npx playwright install chromium)
   fi
-  step "Engine: building the viewer"
-  (cd engine && npm run build)
 fi
 
 if $has_app; then

@@ -1,8 +1,8 @@
 import { FALLBACK_DOCUMENT_NAME } from '../../config/constants';
 import { logger } from '../../logger';
 import { addRecent } from '../recent/recent-store';
-import { extensionOf, rememberUnkept, type OpenedDocument } from './document';
-import { copyToStore, deleteFile, newId, sha256Of, sourceInfo } from './document-files';
+import { extensionOf, findUnkept, forgetUnkept, rememberUnkept, type OpenedDocument } from './document';
+import { clearOpenFolder, copyToStore, deleteFile, newId, sha256Of, sourceInfo } from './document-files';
 import { openError, type OpenError } from './open-error';
 
 export interface OpenRequest {
@@ -73,4 +73,19 @@ export async function addToRecent(requests: OpenRequest[], keepRecent: boolean):
     const result = await openDocument(request, true);
     if (!result.ok) logger.warn('adding a shared file failed', result.error.code);
   }
+}
+
+/**
+ * Called when the viewer closes. A document opened with recent files off exists only for this viewing, so its
+ * copy goes now, whatever the outcome; a kept document's copy belongs to the recent list and stays.
+ */
+export function releaseDocument(document: OpenedDocument): void {
+  if (!findUnkept(document.id)) return;
+  deleteFile(document.path);
+  forgetUnkept(document.id);
+}
+
+/** At app start: removes copies a killed app left in the cache `open` folder. */
+export function cleanLeftoverCopies(): void {
+  clearOpenFolder();
 }

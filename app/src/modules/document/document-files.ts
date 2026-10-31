@@ -75,3 +75,18 @@ export function deleteFile(uri: string): void {
     // Nothing more to do: the copy is unreachable or gone.
   }
 }
+
+/** The file's bytes as base64. */
+export async function readBase64(uri: string): Promise<string> {
+  return new File(uri).base64();
+}
+
+/** Deletes everything in the cache `open` folder: what a killed app left behind. */
+export function clearOpenFolder(): void {
+  try {
+    const directory = folderOf('open');
+    if (directory.exists) directory.delete();
+  } catch {
+    // Nothing more to do: the folder is unreachable or gone.
+  }
+}

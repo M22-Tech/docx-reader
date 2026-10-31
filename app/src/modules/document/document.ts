@@ -27,3 +27,7 @@ export function rememberUnkept(document: OpenedDocument): void {
 export function findUnkept(id: string): OpenedDocument | undefined {
   return unkept.get(id);
 }
+
+export function forgetUnkept(id: string): void {
+  unkept.delete(id);
+}

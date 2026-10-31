@@ -1,9 +1,10 @@
 import { addRecent } from '../recent/recent-store';
 import { findUnkept } from './document';
-import { copyToStore, deleteFile, newId, sha256Of, sourceInfo } from './document-files';
-import { addToRecent, openDocument } from './open-document';
+import { clearOpenFolder, copyToStore, deleteFile, newId, sha256Of, sourceInfo } from './document-files';
+import { addToRecent, cleanLeftoverCopies, openDocument, releaseDocument } from './open-document';
 
 jest.mock('./document-files', () => ({
+  clearOpenFolder: jest.fn(),
   copyToStore: jest.fn(),
   deleteFile: jest.fn(),
   newId: jest.fn(),
@@ -18,6 +19,7 @@ const mockSha = jest.mocked(sha256Of);
 const mockNewId = jest.mocked(newId);
 const mockDelete = jest.mocked(deleteFile);
 const mockAdd = jest.mocked(addRecent);
+const mockClearOpen = jest.mocked(clearOpenFolder);
 
 beforeEach(() => {
   jest.resetAllMocks();
@@ -148,5 +150,31 @@ describe('addToRecent (the other files of a share)', () => {
   it('copies nothing with recent files off', async () => {
     await addToRecent([{ uri: 'file:///a.docx', name: 'a.docx' }], false);
     expect(mockCopy).not.toHaveBeenCalled();
+  });
+});
+
+describe('releaseDocument', () => {
+  it('deletes the copy of a document opened with recent files off', async () => {
+    const opened = await openDocument({ uri: 'content://x/1', name: 'Report.docx' }, false);
+    if (!opened.ok) throw new Error('expected the document to open');
+    mockDelete.mockClear();
+    releaseDocument(opened.document);
+    expect(mockDelete).toHaveBeenCalledWith('file:///open/abc123xyz0.docx');
+    expect(findUnkept('abc123xyz0')).toBeUndefined();
+  });
+
+  it('keeps the copy of a recent document', async () => {
+    const opened = await openDocument({ uri: 'content://x/1', name: 'Report.docx' }, true);
+    if (!opened.ok) throw new Error('expected the document to open');
+    mockDelete.mockClear();
+    releaseDocument(opened.document);
+    expect(mockDelete).not.toHaveBeenCalled();
+  });
+});
+
+describe('cleanLeftoverCopies', () => {
+  it('clears the cache open folder', () => {
+    cleanLeftoverCopies();
+    expect(mockClearOpen).toHaveBeenCalledTimes(1);
   });
 });

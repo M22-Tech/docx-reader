@@ -5,7 +5,7 @@ DocX Reader is an offline document reader: an Expo app (`app/`) that shows docum
 ## Stack
 
 - Node 24 (pinned in `.nvmrc`), TypeScript 6.0 in strict mode in both packages. Every `package.json` (root, `engine/`, `app/`) declares `"engines": { "node": ">=24" }` and `"devEngines": { "packageManager": { "name": "npm", "version": ">=11.0.0", "onFail": "warn" } }` (a range, not an exact pin, so nub and corepack users get a recent npm without a warning). Two independent npm packages (`engine/`, `app/`), each with its own `package.json` and lockfile; no workspaces. The root `package.json` only declares the Node and npm versions and the `setup` script; it has no dependencies.
-- Engine: Vite 8 with `vite-plugin-singlefile` (one self-contained `viewer.html`), Vitest 5 with jsdom for unit tests, Playwright for rendering tests of the built viewer in Chromium. Libraries: `docx-preview` (docx Layout), `mammoth` (docx Reading), `jszip` (zip containers), `cfb` (the .doc container), `dompurify` (every HTML that reaches the page). The .doc, .rtf and .odt parsers are our own code.
+- Engine: Vite 8 with `vite-plugin-singlefile` (one self-contained `viewer.html`), Vitest 5 with jsdom for unit tests, Playwright for rendering tests of the built viewer in Chromium. Libraries: `docx-preview` (docx Raw), `mammoth` (docx Rendered), `jszip` (zip containers), `cfb` (the .doc container), `dompurify` (every HTML that reaches the page). The .doc, .rtf and .odt parsers are our own code.
 - App: Expo SDK 58 (React Native 0.88, React 19.3), Expo Router, `react-native-webview`, `expo-file-system`, `expo-document-picker`, `expo-share-intent`, `expo-crypto`, `@react-native-async-storage/async-storage`, `lucide-react-native` with `react-native-svg`, `expo-font` with `@expo-google-fonts/arimo` (the app font), zod for stored data. jest-expo for unit tests.
 - One `.gitignore`, `.prettierrc.json` and `.prettierignore` at the repo root for both packages (the format scripts pass `--ignore-path ../.prettierignore`, since Prettier reads ignore files only from the folder it runs in). `eslint.config.js` and `tsconfig.json` stay per package: the engine uses ESLint 10 with typescript-eslint for the browser, the app Expo's ESLint 9 setup for React Native.
 - Exact versions in `package.json` (no `^` or `~`). Native app dependencies are added with `npx expo install` so they match SDK 58, then pinned. Don't add a dependency the task doesn't name. If one is really needed, stop and explain why.
@@ -16,9 +16,9 @@ DocX Reader is an offline document reader: an Expo app (`app/`) that shows docum
 engine/
   src/
     detect/              format detection from the file's bytes
-    model/               the document model (types) and its renderers: model -> HTML for Layout and Reading
+    model/               the document model (types) and its renderers: model -> HTML for Raw and Rendered
     formats/<format>/    one folder per format (docx, doc, rtf, odt, html): <format>-adapter.ts plus parser files
-    sanitize/            DOMPurify setup for Layout and Reading, link rewriting
+    sanitize/            DOMPurify setup for Raw and Rendered, link rewriting
     viewer/              the page: bridge, mode switching, theme, error view, link handling
     bridge/              message types shared with the app (bridge-messages.ts)
   dev/                   dev harness page (open a local file in a desktop browser)
@@ -44,8 +44,9 @@ android-env.sh           runs a command with JAVA_HOME (a JDK 17) and ANDROID_HO
 
 ## Engine architecture
 
-- Every format has an adapter implementing `FormatAdapter` from `engine/src/formats/format-adapter.ts`: `renderLayout(bytes, container, ctx)` and `renderReading(bytes, ctx)`. The viewer picks the adapter from `detect()`, never from the file extension.
-- docx uses `docx-preview` for Layout and `mammoth` for Reading. doc, rtf and odt parse into the document model (`engine/src/model/document-model.ts`), and the shared model renderers produce both modes, so those three formats look consistent.
+- Modes are Raw and Rendered everywhere: in the UI, the bridge (`raw`, `rendered`), settings, code names, CSS classes and docs (`docs/spec/03-viewer.md`). Raw is the page as Word shows it for documents and the source text for source formats (html; Markdown later); Rendered is the reflowed content. Don't use Layout or Reading for the modes.
+- Every format has an adapter implementing `FormatAdapter` from `engine/src/formats/format-adapter.ts`: `renderRaw(bytes, container, ctx)` and `renderRendered(bytes, ctx)`. The viewer picks the adapter from `detect()`, never from the file extension.
+- docx uses `docx-preview` for Raw and `mammoth` for Rendered. doc, rtf and odt parse into the document model (`engine/src/model/document-model.ts`), and the shared model renderers produce both modes, so those three formats look consistent.
 - Parsers are pure functions from bytes to model, following their `docs/design/` file: no DOM except `DOMParser` for XML, no globals, no network, no timers. They read with bounds checks and throw `DocumentError` (`engine/src/document-error.ts`) with a code from the spec (`corrupt`, `encrypted`, `unsupported_version`, ...) instead of crashing on bad input. An element a parser does not understand is skipped, not fatal.
 - All HTML goes through `sanitize/` before it is inserted: no scripts, event handlers, iframes, forms or remote URLs. Images are only `data:` or `blob:` URLs. Links become in-app link elements that ask the app to open them (the page never navigates).
 - The page has a Content-Security-Policy that blocks all network access (`default-src 'none'`), set in `viewer.html`.
@@ -54,7 +55,7 @@ android-env.sh           runs a command with JAVA_HOME (a JDK 17) and ANDROID_HO
 ## Bridge
 
 - Messages are JSON, typed in `engine/src/bridge/bridge-messages.ts`; the app imports the same types (copied by `npm run engine:sync`, not hand-written twice). Every message has a `type`.
-- App to page: `open` (file name, bytes as base64, mode, settings), `setMode`, `setSettings` (theme, reading text size, reading font style).
+- App to page: `open` (file name, bytes as base64, mode, settings), `setMode`, `setSettings` (theme, text size, font style).
 - Page to app: `ready`, `rendered` (format, mode, `durationMs`, whether the other mode is available), `error` (code, message), `openLink` (href).
 - Both sides validate incoming messages with zod and ignore unknown ones.
 
@@ -76,7 +77,7 @@ android-env.sh           runs a command with JAVA_HOME (a JDK 17) and ANDROID_HO
 
 ## UI
 
-- Colours from `app/src/theme/`: background, text and accent for light and dark (`docs/spec/04-look-and-settings.md`). Other shades are the text colour at an opacity; the accent only for the spinner, focus outlines, a selected option and a pressed button. Nothing relies on colour alone. Reading mode gets the background and text colours (as `paper` and `ink`); Layout mode shows the document's own colours.
+- Colours from `app/src/theme/`: background, text and accent for light and dark (`docs/spec/04-look-and-settings.md`). Other shades are the text colour at an opacity; the accent only for the spinner, focus outlines, a selected option and a pressed button. Nothing relies on colour alone. Rendered mode and the source view get the background and text colours (as `paper` and `ink`); Raw mode for documents shows the document's own colours.
 - Font: Arimo (regular and bold) on every app screen, loaded at build time through the `expo-font` config plugin.
 - Body text at least 16 px, font weight at least 400, borders at least 1.5 px, no shadows or gradients, touch targets at least 48 dp (Android guideline).
 - Feedback: a pressed state on every button, a spinner while anything loads, errors shown inline where they happen. No toasts.

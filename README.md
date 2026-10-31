@@ -1,6 +1,6 @@
 # DocX Reader
 
-An open-source, offline document reader for Android (iOS later). It opens Word and OpenDocument text files (`.docx`, `.doc`, `.rtf`, `.odt` and their template variants) received from WhatsApp, Gmail or any file manager, and shows them in two modes: Layout (close to how the document looks in Word) and Reading (reflowed to fit the phone). Everything happens on the device: the app has no internet permission, and documents never leave the phone. Product behaviour is described in `docs/spec/`, and how it is built in `docs/design/`.
+An open-source, offline document reader for Android (iOS later). It opens Word and OpenDocument text files (`.docx`, `.doc`, `.rtf`, `.odt` and their template variants) received from WhatsApp, Gmail or any file manager, and shows them in two modes: Raw (the document as Word shows it) and Rendered (reflowed to fit the phone). Everything happens on the device: the app has no internet permission, and documents never leave the phone. Product behaviour is described in `docs/spec/`, and how it is built in `docs/design/`.
 
 ## Setup
 

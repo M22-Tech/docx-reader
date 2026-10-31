@@ -15,6 +15,7 @@
   },
   "scripts": {
     "start": "expo start",
+    "engine:sync": "node scripts/engine-sync.mjs",
     "android": "../android-env.sh expo run:android",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
@@ -47,6 +48,7 @@
     "react-native-safe-area-context": "5.10.1",
     "react-native-screens": "4.30.1",
     "react-native-svg": "15.16.0",
+    "react-native-webview": "14.0.1",
     "zod": "4.6.7"
   },
   "devDependencies": {
@@ -60,6 +62,9 @@
     "typescript": "6.0.3"
   },
   "jest": {
-    "preset": "jest-expo"
+    "preset": "jest-expo",
+    "moduleNameMapper": {
+      "/viewer/generated/viewer-html$": "<rootDir>/src/viewer/viewer-html.stub.ts"
+    }
   }
 }

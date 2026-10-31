@@ -1,6 +1,6 @@
 # App
 
-The DocX Reader Android app (Expo): home and settings screens now, opening files and the viewer in later tasks. See `docs/spec/` for what it does and `docs/design/00-architecture.md` for how it is built.
+The DocX Reader Android app (Expo): home, settings and viewer screens. See `docs/spec/` for what it does and `docs/design/00-architecture.md` for how it is built.
 
 ## Setup
 
@@ -18,6 +18,10 @@ Without a cable (Android 11 and later): Developer options → Wireless debugging
 After changing `app.json`, the icons, the splash or a native dependency, regenerate the Android project before running again: `npx expo prebuild --platform android --clean && npm run android` (`android/` is generated and gitignored). If the launcher still shows the old icon, uninstall the app from the phone first; some launchers cache icons.
 
 `npm run android` goes through `../android-env.sh`, which picks a JDK 17 and the Android SDK whatever your shell's `JAVA_HOME` is. Production builds come later.
+
+## Engine sync
+
+The viewer runs the engine's page in a web view. `npm run engine:sync` builds the engine (`npm run build` in `engine/`) and writes `src/viewer/generated/viewer-html.ts` (the page as a string) and `src/viewer/generated/bridge-messages.ts` (a copy of the engine's bridge types). The folder is generated and gitignored. Run it after every change in `engine/`, and before `npm run check` in a fresh clone if `setup.sh` wasn't run (the typecheck needs the generated files). Jest replaces the page with a stub, so tests don't need it.
 
 ## Checks
 

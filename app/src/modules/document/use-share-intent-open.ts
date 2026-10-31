@@ -1,6 +1,6 @@
 import { useRouter, useRootNavigationState } from 'expo-router';
 import { useShareIntentContext } from 'expo-share-intent';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { logger } from '../../logger';
 import { useSetting } from '../setting/use-setting';
 import { addToRecent } from './open-document';
@@ -14,9 +14,12 @@ export function useShareIntentOpen(): void {
   const navigationReady = Boolean(useRootNavigationState()?.key);
   const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntentContext();
   const { setting } = useSetting();
+  // The reset reaches the context a render later; this stops the same share being handled twice meanwhile.
+  const handled = useRef<unknown>(null);
 
   useEffect(() => {
-    if (!hasShareIntent || !navigationReady) return;
+    if (!hasShareIntent || !navigationReady || handled.current === shareIntent) return;
+    handled.current = shareIntent;
     const files = shareIntent.files ?? [];
     resetShareIntent();
     const [first, ...others] = files;

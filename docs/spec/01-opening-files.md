@@ -25,7 +25,7 @@
 - Each recent file has a remove button; removing deletes the private copy at once. "Clear recent files" in settings removes them all, after a confirmation.
 - The list keeps at most 20 files; opening one more removes the oldest, with its copy.
 - Opening the same file again (same name and same contents) moves it to the top instead of adding a second entry.
-- Setting "Keep recent files" off (`04-look-and-settings.md`) clears the list and its copies, and from then on documents are kept only while they are open: the copy is deleted when the viewer closes.
+- Setting "Keep recent files" off (`04-look-and-settings.md`) clears the list and its copies, and from then on documents are kept only while they are open: the copy is deleted when the viewer closes, and anything such a copy left behind (the app was killed with a document open) is deleted when the app starts.
 - Private copies live in the app's own storage, which other apps cannot read. Uninstalling the app deletes them.
 
 ## Errors when opening

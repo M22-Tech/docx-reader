@@ -6,8 +6,8 @@ import { Card } from './ui/card';
 import { FileName } from './ui/file-name';
 import { IconButton } from './ui/icon-button';
 
-/** The error from opening a file: the file name, the message and a dismiss button. */
-export function OpenErrorCard({ error, onDismiss }: { error: OpenError; onDismiss: () => void }) {
+/** The error from opening a file: the file name, the message and, when `onDismiss` is given, a dismiss button. */
+export function OpenErrorCard({ error, onDismiss }: { error: OpenError; onDismiss?: () => void }) {
   return (
     <Card>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
@@ -15,7 +15,9 @@ export function OpenErrorCard({ error, onDismiss }: { error: OpenError; onDismis
           <FileName name={error.fileName} bold />
           <AppText>{error.message}</AppText>
         </View>
-        <IconButton icon={X} accessibilityLabel="Dismiss error" labelAlign="left" onPress={onDismiss} />
+        {onDismiss ? (
+          <IconButton icon={X} accessibilityLabel="Dismiss error" labelAlign="left" onPress={onDismiss} />
+        ) : null}
       </View>
     </Card>
   );

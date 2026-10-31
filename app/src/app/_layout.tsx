@@ -3,6 +3,7 @@ import { ShareIntentProvider } from 'expo-share-intent';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { cleanLeftoverCopies } from '../modules/document/open-document';
 import { OpenErrorProvider } from '../modules/document/open-error';
 import { useShareIntentOpen } from '../modules/document/use-share-intent-open';
 import { SettingProvider, useSetting } from '../modules/setting/use-setting';
@@ -10,6 +11,8 @@ import { fonts } from '../theme/fonts';
 import { ThemeProvider, useTheme } from '../theme/theme-provider';
 
 void SplashScreen.preventAutoHideAsync();
+// Before any document is opened this run: a killed app may have left a copy in the cache folder.
+cleanLeftoverCopies();
 
 function Navigator() {
   const { ready } = useSetting();

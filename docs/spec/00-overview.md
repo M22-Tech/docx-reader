@@ -8,8 +8,8 @@ Two promises shape everything else: it opens the common Word and OpenDocument te
 
 - **Document**: a file the app can open: `.docx`, `.doc`, `.rtf` or `.odt`, or a template variant of one of them (`02-formats.md`).
 - **Format**: what the file really is, worked out from its contents, not its name. A `.doc` file that is really RTF is read as RTF.
-- **Layout mode**: the document as its author laid it out: page width, fonts, sizes, colours and, for `.docx`, real pages with headers and footers. Zoom with two fingers.
-- **Reading mode**: the same content reflowed to the screen width in the app's theme and reading font, with an adjustable text size. Bold, italics, headings, lists, tables, images and links stay; fonts, colours and page layout go.
+- **Raw mode**: the file as it is. A document looks as it does in Word or another office app: page width, fonts, sizes, colours and, for `.docx`, real pages with headers and footers; zoom with two fingers. A source file (an HTML file today; Markdown later) shows its source text.
+- **Rendered mode**: the content reflowed to the screen width in the app's theme and chosen font style, with an adjustable text size. Bold, italics, headings, lists, tables, images and links stay; fonts, colours and page layout go. A source file shows its preview, the way a browser would show it.
 - **Recent file**: a document opened before, kept as a private copy inside the app so it can be reopened later (`01-opening-files.md`).
 - **Brand**: the app's name, icon, wordmark, colours and font, fixed in the app (`04-look-and-settings.md`).
 

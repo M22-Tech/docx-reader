@@ -36,9 +36,9 @@ Both modes show the main text with bold, italic, underline, strikethrough, super
 
 | | docx | doc, rtf, odt | html |
 |---|---|---|---|
-| Layout: page width, margins, fonts, sizes, colours, highlight, alignment, indents, spacing | yes | yes | Reading only |
-| Layout: real page breaks, page size, headers and footers, page numbers | yes | no: one continuous page at the document's page width, page breaks drawn as a divider | |
-| Footnotes | Layout: at the foot of each page; Reading: at the end | at the end of the document, numbered, linked both ways | |
+| Raw: page width, margins, fonts, sizes, colours, highlight, alignment, indents, spacing | yes | yes | Raw shows the source |
+| Raw: real page breaks, page size, headers and footers, page numbers | yes | no: one continuous page at the document's page width, page breaks drawn as a divider | |
+| Footnotes | Raw: at the foot of each page; Rendered: at the end | at the end of the document, numbered, linked both ways | |
 | Comments, tracked changes | final text only (insertions kept, deletions hidden, comments hidden) | same | |
 | Text boxes, shapes, WordArt, charts, SmartArt, equations | the text inside where the library provides it, otherwise left out | left out | |
 | Images: PNG, JPEG, GIF, BMP | yes | yes | only images embedded in the file (`data:` URLs) |
@@ -46,8 +46,8 @@ Both modes show the main text with bold, italic, underline, strikethrough, super
 | Linked images (stored outside the file) | not loaded (privacy); placeholder box | same | not loaded; placeholder box |
 | Embedded objects (another document or spreadsheet inside) | the object's preview image if there is one, otherwise left out | same | |
 
-- **docx** uses two different libraries for the two modes (`CLAUDE.md`), so small differences between modes are expected: Reading keeps structure (headings, lists, tables, emphasis), Layout keeps appearance.
+- **docx** uses two different libraries for the two modes (`CLAUDE.md`), so small differences between modes are expected: Rendered keeps structure (headings, lists, tables, emphasis), Raw keeps appearance.
 - **doc** covers Word 97 to 2003 files, including those saved by LibreOffice, Google Docs and WPS. Word 6 and Word 95 files give `unsupported_version`; files encrypted with a password give `encrypted`. "Fast saved" files are read correctly.
 - **rtf** covers the RTF written by Word, WordPad, LibreOffice and macOS TextEdit: text and paragraph formatting, fonts and colour tables, Unicode (`\u`) and code-page text, lists (`\listtext` and `\pntext`), tables (`\trowd ... \row`, merged cells), `\pict` images, `HYPERLINK` fields, footnotes and page breaks. Headers and footers are left out.
 - **odt** covers ODF 1.2 and later text documents, including those saved by Word and Google Docs: automatic and named styles (inheritance included), lists, tables (`table:number-columns-spanned` and `...rows-spanned`), images in `Pictures/`, links, footnotes and endnotes, page size from the default page layout. Headers and footers are left out.
-- **html** (an HTML file with a `.doc`-style name) is shown in Reading mode only, after sanitising: scripts, styles that load anything, forms and remote images are removed. The mode toggle is hidden for it.
+- **html** (an HTML file with a `.doc`-style name): Raw shows the source text; Rendered shows the page after sanitising: scripts, styles that load anything, forms and remote images are removed.
