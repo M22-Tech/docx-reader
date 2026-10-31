@@ -5,14 +5,14 @@
 The brand is fixed for this app (no brand config file); it comes from the "DocX Reader Icon" slides.
 
 - Name "DocX Reader", Android package `tech.m22.docxreader`.
-- Icon: the framed page with "DOC X READER" on a transparent background (`app/assets/brand/icon.png`), used for the launcher (on white) and the splash screen (centred on the theme's background colour). There is no separate adaptive icon.
+- Icon: the framed page with "DOC X READER" on a transparent background (`app/assets/brand/icon.png`), used for the splash screen (centred on the theme's background colour). The launcher icon is Android's adaptive icon: the same page, smaller, centred in the safe zone (`adaptive-icon.png`) on a white `#FFFFFF` background (the page's own colour), so the launcher's mask never cuts it.
 - Wordmark: "DOC X READER" as an image on a transparent background, `wordmark-light.png` (blue) or `wordmark-dark.png` (white with a blue X) for the current theme, with the accessibility label "DocX Reader".
 - Colours:
 
 | | Background | Text | Accent | Wordmark X |
 |---|---|---|---|---|
-| Light | `#FFFFFF` | `#434343` | `#065591` | `#065591` |
-| Dark | `#434343` | `#FFFFFF` | `#1F87D6` | `#1F87D6` |
+| Light | `#FFFFFF` | `#262626` | `#065591` | `#065591` |
+| Dark | `#262626` | `#FFFFFF` | `#1F87D6` | `#1F87D6` |
 
 - Font: Arimo (regular and bold) for every app screen, bundled with the app; the wordmark uses it too. Reading mode uses the device's serif or sans-serif font instead, so documents in any script display.
 

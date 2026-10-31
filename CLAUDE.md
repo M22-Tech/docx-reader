@@ -7,6 +7,7 @@ DocX Reader is an offline document reader: an Expo app (`app/`) that shows docum
 - Node 24 (pinned in `.nvmrc`), TypeScript 6.0 in strict mode in both packages. Every `package.json` (root, `engine/`, `app/`) declares `"engines": { "node": ">=24" }` and `"devEngines": { "packageManager": { "name": "npm", "version": ">=11.0.0", "onFail": "warn" } }` (a range, not an exact pin, so nub and corepack users get a recent npm without a warning). Two independent npm packages (`engine/`, `app/`), each with its own `package.json` and lockfile; no workspaces. The root `package.json` only declares the Node and npm versions and the `setup` script; it has no dependencies.
 - Engine: Vite 8 with `vite-plugin-singlefile` (one self-contained `viewer.html`), Vitest 5 with jsdom for unit tests, Playwright for rendering tests of the built viewer in Chromium. Libraries: `docx-preview` (docx Layout), `mammoth` (docx Reading), `jszip` (zip containers), `cfb` (the .doc container), `dompurify` (every HTML that reaches the page). The .doc, .rtf and .odt parsers are our own code.
 - App: Expo SDK 58 (React Native 0.88, React 19.3), Expo Router, `react-native-webview`, `expo-file-system`, `expo-document-picker`, `expo-share-intent`, `expo-crypto`, `@react-native-async-storage/async-storage`, `lucide-react-native` with `react-native-svg`, `expo-font` with `@expo-google-fonts/arimo` (the app font), zod for stored data. jest-expo for unit tests.
+- One `.gitignore`, `.prettierrc.json` and `.prettierignore` at the repo root for both packages (the format scripts pass `--ignore-path ../.prettierignore`, since Prettier reads ignore files only from the folder it runs in). `eslint.config.js` and `tsconfig.json` stay per package: the engine uses ESLint 10 with typescript-eslint for the browser, the app Expo's ESLint 9 setup for React Native.
 - Exact versions in `package.json` (no `^` or `~`). Native app dependencies are added with `npx expo install` so they match SDK 58, then pinned. Don't add a dependency the task doesn't name. If one is really needed, stop and explain why.
 
 ## Layout
@@ -31,7 +32,7 @@ app/
   src/viewer/            the web view wrapper and bridge client; generated/viewer-html.ts (gitignored, written by `npm run engine:sync`)
   src/config/            fixed values (constants.ts)
   src/theme/             colours, font and spacing from docs/spec/04-look-and-settings.md
-  assets/brand/          icon.png (launcher and splash) and the two wordmarks, transparent (from the brand slides; don't regenerate)
+  assets/brand/          icon.png (splash), adaptive-icon.png (launcher foreground) and the two wordmarks, transparent (from the brand slides; don't regenerate)
   plugins/               Expo config plugins
 fixtures/                public test documents (committed) and make-fixtures.mjs
 samples/                 private documents for manual checks (gitignored)

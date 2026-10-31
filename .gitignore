@@ -3,18 +3,28 @@
 .prompts/
 node_modules/
 coverage/
+dist/
 *.tsbuildinfo
+npm-debug.*
+.env*.local
 
 samples/*
 !samples/README.md
 
-engine/dist/
 engine/playwright-report/
 engine/test-results/
 
 app/.expo/
 app/android/
 app/ios/
+app/expo-env.d.ts
 app/src/viewer/generated/
+.kotlin/
+.metro-health-check*
+*.orig.*
 *.jks
 *.keystore
+*.p8
+*.p12
+*.key
+*.pem

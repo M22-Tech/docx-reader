@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "DocX Reader",
+    "slug": "docx-reader",
+    "scheme": "docxreader",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/brand/icon.png",
+    "userInterfaceStyle": "automatic",
+    "platforms": ["android"],
+    "android": {
+      "package": "tech.m22.docxreader",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/brand/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/brand/icon.png",
+          "backgroundColor": "#FFFFFF",
+          "dark": {
+            "image": "./assets/brand/icon.png",
+            "backgroundColor": "#262626"
+          }
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./node_modules/@expo-google-fonts/arimo/400Regular/Arimo_400Regular.ttf",
+            "./node_modules/@expo-google-fonts/arimo/700Bold/Arimo_700Bold.ttf"
+          ]
+        }
+      ]
+    ]
+  }
+}

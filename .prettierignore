@@ -1,6 +1,8 @@
-dist
-coverage
 node_modules
 package-lock.json
+dist
+coverage
 playwright-report
 test-results
+.expo
+app/src/viewer/generated
