@@ -1,7 +1,10 @@
 import { Stack } from 'expo-router';
+import { ShareIntentProvider } from 'expo-share-intent';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { OpenErrorProvider } from '../modules/document/open-error';
+import { useShareIntentOpen } from '../modules/document/use-share-intent-open';
 import { SettingProvider, useSetting } from '../modules/setting/use-setting';
 import { fonts } from '../theme/fonts';
 import { ThemeProvider, useTheme } from '../theme/theme-provider';
@@ -11,6 +14,7 @@ void SplashScreen.preventAutoHideAsync();
 function Navigator() {
   const { ready } = useSetting();
   const { colors } = useTheme();
+  useShareIntentOpen();
 
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync();
@@ -34,12 +38,16 @@ function Navigator() {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <SettingProvider>
-        <ThemeProvider>
-          <Navigator />
-        </ThemeProvider>
-      </SettingProvider>
-    </SafeAreaProvider>
+    <ShareIntentProvider>
+      <SafeAreaProvider>
+        <SettingProvider>
+          <ThemeProvider>
+            <OpenErrorProvider>
+              <Navigator />
+            </OpenErrorProvider>
+          </ThemeProvider>
+        </SettingProvider>
+      </SafeAreaProvider>
+    </ShareIntentProvider>
   );
 }

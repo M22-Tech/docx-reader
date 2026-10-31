@@ -14,7 +14,263 @@
         "foregroundImage": "./assets/brand/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "scheme": "content",
+              "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "scheme": "content",
+              "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.template"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.template"
+            }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "scheme": "content",
+              "mimeType": "application/vnd.ms-word.document.macroEnabled.12"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "application/vnd.ms-word.document.macroEnabled.12"
+            }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "scheme": "content",
+              "mimeType": "application/vnd.ms-word.template.macroEnabled.12"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "application/vnd.ms-word.template.macroEnabled.12"
+            }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "scheme": "content",
+              "mimeType": "application/msword"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "application/msword"
+            }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "scheme": "content",
+              "mimeType": "application/vnd.ms-word"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "application/vnd.ms-word"
+            }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "scheme": "content",
+              "mimeType": "application/rtf"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "application/rtf"
+            }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "scheme": "content",
+              "mimeType": "text/rtf"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "text/rtf"
+            }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "scheme": "content",
+              "mimeType": "application/vnd.oasis.opendocument.text"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "application/vnd.oasis.opendocument.text"
+            }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "scheme": "content",
+              "mimeType": "application/vnd.oasis.opendocument.text-template"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "application/vnd.oasis.opendocument.text-template"
+            }
+          ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "scheme": "content",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.docx"
+            },
+            {
+              "scheme": "content",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.docm"
+            },
+            {
+              "scheme": "content",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.dotx"
+            },
+            {
+              "scheme": "content",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.dotm"
+            },
+            {
+              "scheme": "content",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.doc"
+            },
+            {
+              "scheme": "content",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.dot"
+            },
+            {
+              "scheme": "content",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.rtf"
+            },
+            {
+              "scheme": "content",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.odt"
+            },
+            {
+              "scheme": "content",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.ott"
+            },
+            {
+              "scheme": "file",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.docx"
+            },
+            {
+              "scheme": "file",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.docm"
+            },
+            {
+              "scheme": "file",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.dotx"
+            },
+            {
+              "scheme": "file",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.dotm"
+            },
+            {
+              "scheme": "file",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.doc"
+            },
+            {
+              "scheme": "file",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.dot"
+            },
+            {
+              "scheme": "file",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.rtf"
+            },
+            {
+              "scheme": "file",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.odt"
+            },
+            {
+              "scheme": "file",
+              "host": "*",
+              "mimeType": "application/octet-stream",
+              "pathPattern": ".*\\\\.ott"
+            }
+          ]
+        }
+      ]
     },
     "plugins": [
       "expo-router",
@@ -35,6 +291,36 @@
           "fonts": [
             "./node_modules/@expo-google-fonts/arimo/400Regular/Arimo_400Regular.ttf",
             "./node_modules/@expo-google-fonts/arimo/700Bold/Arimo_700Bold.ttf"
+          ]
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "disableIOS": true,
+          "androidIntentFilters": [
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.template",
+            "application/vnd.ms-word.document.macroEnabled.12",
+            "application/vnd.ms-word.template.macroEnabled.12",
+            "application/msword",
+            "application/vnd.ms-word",
+            "application/rtf",
+            "text/rtf",
+            "application/vnd.oasis.opendocument.text",
+            "application/vnd.oasis.opendocument.text-template"
+          ],
+          "androidMultiIntentFilters": [
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.template",
+            "application/vnd.ms-word.document.macroEnabled.12",
+            "application/vnd.ms-word.template.macroEnabled.12",
+            "application/msword",
+            "application/vnd.ms-word",
+            "application/rtf",
+            "text/rtf",
+            "application/vnd.oasis.opendocument.text",
+            "application/vnd.oasis.opendocument.text-template"
           ]
         }
       ]

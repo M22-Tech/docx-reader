@@ -24,3 +24,29 @@ export const DEFAULT_VIEW_MODE: ViewMode = 'layout';
 export const DEFAULT_READING_FONT_STYLE: ReadingFontStyle = 'sans';
 export const DEFAULT_READING_TEXT_SIZE: ReadingTextSize = 18;
 export const DEFAULT_KEEP_RECENT_FILES = true;
+
+export const DOCUMENT_FORMATS = ['docx', 'doc', 'rtf', 'odt', 'html'] as const;
+export type DocumentFormat = (typeof DOCUMENT_FORMATS)[number];
+
+/** The MIME types of the supported formats (docs/spec/02-formats.md, Supported formats). app.json lists the same ones for the Android intent filters. */
+export const SUPPORTED_MIME_TYPES = [
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.template',
+  'application/vnd.ms-word.document.macroEnabled.12',
+  'application/vnd.ms-word.template.macroEnabled.12',
+  'application/msword',
+  'application/vnd.ms-word',
+  'application/rtf',
+  'text/rtf',
+  'application/vnd.oasis.opendocument.text',
+  'application/vnd.oasis.opendocument.text-template',
+] as const;
+
+export const SUPPORTED_EXTENSIONS = ['docx', 'docm', 'dotx', 'dotm', 'doc', 'dot', 'rtf', 'odt', 'ott'] as const;
+
+/** Name for a document that arrives without one, and extension for a name without one. */
+export const FALLBACK_DOCUMENT_NAME = 'Document';
+export const FALLBACK_EXTENSION = 'bin';
+
+/** Characters of a file name shown before it is cut in the middle (the extension always stays). */
+export const MAX_SHOWN_NAME_LENGTH = 40;

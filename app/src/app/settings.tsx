@@ -6,10 +6,12 @@ import { SettingRow } from '../components/settings/setting-row';
 import { ThemeToggleButton } from '../components/theme-toggle-button';
 import { AppText } from '../components/ui/app-text';
 import { Card } from '../components/ui/card';
+import { confirm } from '../components/ui/confirm';
 import { IconButton } from '../components/ui/icon-button';
 import { Screen } from '../components/ui/screen';
 import { Toggle } from '../components/ui/toggle';
 import { APP_NAME } from '../config/constants';
+import { useRecent } from '../modules/recent/use-recent';
 import { canStepTextSize, stepTextSize } from '../modules/setting/reading-text-size';
 import { useSetting } from '../modules/setting/use-setting';
 import { deviceFonts } from '../theme/fonts';
@@ -22,6 +24,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { mode } = useTheme();
   const { setting, update } = useSetting();
+  const { clear } = useRecent();
   const fontFamily = deviceFonts[setting.readingFontStyle];
 
   return (
@@ -94,15 +97,21 @@ export default function SettingsScreen() {
               { value: 'off', label: 'Off' },
             ]}
             value={setting.keepRecentFiles ? 'on' : 'off'}
-            onChange={(value) => update({ keepRecentFiles: value === 'on' })}
+            onChange={(value) => {
+              if (value === 'on') {
+                update({ keepRecentFiles: true });
+              } else if (setting.keepRecentFiles) {
+                confirm('Turn off recent files? This removes them and their copies.', 'Turn off', () => {
+                  void clear().then(() => update({ keepRecentFiles: false }));
+                });
+              }
+            }}
           />
           <SettingRow label="Clear recent files">
             <IconButton
               icon={Trash2}
               accessibilityLabel="Clear recent files"
-              onPress={() => {
-                // Clearing recent files, with its confirmation, comes in task 12.
-              }}
+              onPress={() => confirm('Remove all recent files?', 'Remove', () => void clear())}
             />
           </SettingRow>
         </Card>
