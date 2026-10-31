@@ -25,7 +25,7 @@ The brand is fixed for this app (no brand config file); it comes from the "DocX 
 
 ## Screens
 
-- **Home**: the header shows the wordmark and buttons for the theme toggle and settings. Below it, the "Open file" card (pressable: icon, title "Open file", line "Pick a document from your phone", chevron), then a card titled "Recent files" with the list (`01-opening-files.md`). With no recent files, the card says "Documents you open will appear here." Any error from opening a file shows as a card above "Open file".
+- **Home**: the header shows the wordmark and a settings button. Below it, the "Open file" card (pressable: icon, title "Open file", line "Pick a document from your phone", chevron), then a card titled "Recent files" with the list (`01-opening-files.md`). With no recent files, the card says "Documents you open will appear here." Any error from opening a file shows as a card above "Open file".
 - **Viewer**: `03-viewer.md`.
 - **Settings**: a back button and the cards below.
 - With only these three screens there is no side menu; the home screen is the dashboard.
@@ -34,7 +34,7 @@ The brand is fixed for this app (no brand config file); it comes from the "DocX 
 
 Saved on the device and applied at once:
 
-- **Theme**: light or dark. Until one is chosen the app follows the device setting; there is no "system" option. The home header toggle switches between light and dark (its icon shows the mode it switches to). The settings card has the same toggle with the current mode written next to it.
+- **Theme**: light or dark. Until one is chosen the app follows the device setting; there is no "system" option. It is switched in the settings card, which shows the current mode next to the toggle; there is no theme button in the home header.
 - **Default mode**: Layout or Reading (default Layout). Used when a document opens.
 - **Reading text**: font style serif or sans (default sans) with each option previewed in its own font, and the text size (`03-viewer.md`), with a sample line.
 - **Recent files**: "Keep recent files" on or off (default on; off clears them, after a confirmation) and "Clear recent files".
