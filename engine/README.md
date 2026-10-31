@@ -1,6 +1,6 @@
 # Engine
 
-The document engine is a web page (built to one self-contained `dist/viewer.html`) that the app runs inside a web view. It receives a file's bytes, works out the format from its contents, renders the document in Layout or Reading mode and reports back to the app through typed bridge messages. It has no access to the file system or the network. See `docs/design/00-architecture.md` for how it fits into the app.
+The document engine is a web page (built to one self-contained `dist/viewer.html`) that the app runs inside a web view. It receives a file's bytes, works out the format from its contents, renders the document in Raw or Rendered mode and reports back to the app through typed bridge messages. It has no access to the file system or the network. See `docs/design/00-architecture.md` for how it fits into the app.
 
 ## Setup
 

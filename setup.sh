@@ -21,9 +21,6 @@ install_deps() {
   if [ -f package-lock.json ]; then npm ci; else npm install; fi
 }
 
-has_app=false
-[ -f app/package.json ] && has_app=true
-
 # With nub, make sure the Node pinned in .nvmrc is downloaded.
 if command -v nub >/dev/null; then quiet nub node install; fi
 
@@ -48,8 +45,7 @@ if [ -n "$jdk" ]; then
   export JAVA_HOME="$jdk"
 else
   found="$(command -v java >/dev/null && echo "JDK $(java_major "$(command -v java)")" || echo "none")"
-  if $has_app; then fail "JDK 17 is required to build the Android app; found $found. Install it with: brew install --cask zulu@17"; fi
-  row "JDK" "17 not found (found $found); needed once the app exists: brew install --cask zulu@17"
+  fail "JDK 17 is required to build the Android app; found $found. Install it with: brew install --cask zulu@17"
 fi
 
 android_sdk="$(find_android_sdk)"
@@ -61,39 +57,23 @@ if [ -n "$android_sdk" ]; then
   if [ -x "$android_sdk/platform-tools/adb" ]; then
     row "adb" "$("$android_sdk/platform-tools/adb" version 2>/dev/null | sed -n 's/^Version //p' | sed -n 1p)"
   else
-    if $has_app; then fail "adb is missing; install it with: sdkmanager \"platform-tools\""; fi
-    row "adb" "not installed; needed once the app exists: sdkmanager \"platform-tools\""
+    fail "adb is missing; install it with: sdkmanager \"platform-tools\""
   fi
 else
-  if $has_app; then fail "The Android SDK is required: brew install --cask android-commandlinetools (or Android Studio), then set ANDROID_HOME."; fi
-  row "Android SDK" "not found; needed once the app exists: brew install --cask android-commandlinetools"
+  fail "The Android SDK is required: brew install --cask android-commandlinetools (or Android Studio), then set ANDROID_HOME."
 fi
 
-if [ -f engine/package.json ]; then
-  step "Engine: installing dependencies"
-  (cd engine && install_deps)
-  if grep -q '"@playwright/test"' engine/package.json; then
-    step "Engine: installing Chromium for rendering tests"
-    (cd engine && npx playwright install chromium)
-  fi
-fi
+step "Engine: installing dependencies"
+(cd engine && install_deps)
+step "Engine: installing Chromium for rendering tests"
+(cd engine && npx playwright install chromium)
 
-if $has_app; then
-  step "App: installing dependencies"
-  (cd app && install_deps)
-  if grep -q '"engine:sync"' app/package.json; then
-    step "App: copying the viewer into the app"
-    (cd app && npm run engine:sync)
-  fi
-  if grep -q '"licences"' app/package.json; then
-    step "App: collecting the open-source licences"
-    (cd app && npm run licences)
-  fi
-fi
+step "App: installing dependencies"
+(cd app && install_deps)
+step "App: building the engine and copying the viewer into the app"
+(cd app && npm run engine:sync)
+step "App: collecting the open-source licences"
+(cd app && npm run licences)
 
 step "Done"
-if $has_app; then
-  echo "Start the app on a connected phone: cd app && npm run android"
-else
-  echo "The app doesn't exist yet; only the parts that do were set up."
-fi
+echo "Start the app on a connected phone: cd app && npm run android"

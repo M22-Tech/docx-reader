@@ -77,7 +77,7 @@ The viewer runs the engine's page in a web view. `npm run engine:sync` builds th
 
 ## Checks
 
-`npm run check` runs lint, typecheck and the unit tests (Jest with `jest-expo`). `npm run format` formats the code with Prettier. `npx expo export --platform android` builds the bundle without a phone.
+`npm run check` runs lint, typecheck, the unit tests (Jest with `jest-expo`) and the config plugin tests (`npm run test:plugins`). `npm run format` formats the code with Prettier. `npx expo export --platform android` builds the bundle without a phone.
 
 ## Config
 
