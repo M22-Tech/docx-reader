@@ -5,14 +5,14 @@ const settings = { theme: 'light', textSizePx: 18, fontStyle: 'serif', colors: {
 
 describe('parseIncoming', () => {
   it('parses a valid JSON string', () => {
-    expect(parseIncoming(JSON.stringify({ type: 'setMode', mode: 'reading' }))).toEqual({
+    expect(parseIncoming(JSON.stringify({ type: 'setMode', mode: 'rendered' }))).toEqual({
       type: 'setMode',
-      mode: 'reading',
+      mode: 'rendered',
     });
   });
 
   it('ignores non-strings, bad JSON and unknown or malformed messages', () => {
-    expect(parseIncoming({ type: 'setMode', mode: 'reading' })).toBeNull();
+    expect(parseIncoming({ type: 'setMode', mode: 'rendered' })).toBeNull();
     expect(parseIncoming('{nope')).toBeNull();
     expect(parseIncoming(JSON.stringify({ type: 'other' }))).toBeNull();
     expect(parseIncoming(JSON.stringify({ type: 'setMode', mode: 'wide' }))).toBeNull();

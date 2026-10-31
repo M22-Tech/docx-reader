@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { renderLayout } from '../model/render-layout';
-import { renderReading } from '../model/render-reading';
+import { renderRaw } from '../model/render-raw';
+import { renderRendered } from '../model/render-rendered';
 import { fullModel, PNG_BASE64, toDom } from '../model/test-models';
-import { sanitizeLayout, sanitizeReading } from './sanitize';
+import { sanitizeRaw, sanitizeRendered } from './sanitize';
 
 const profiles = [
-  ['layout', sanitizeLayout],
-  ['reading', sanitizeReading],
+  ['raw', sanitizeRaw],
+  ['rendered', sanitizeRendered],
 ] as const;
 
 describe.each(profiles)('%s sanitiser', (name, sanitize) => {
-  const layout = name === 'layout';
+  const isRaw = name === 'raw';
   const clean = (html: string) => toDom(sanitize(html));
   const PNG = `data:image/png;base64,${PNG_BASE64}`;
 
@@ -41,7 +41,7 @@ describe.each(profiles)('%s sanitiser', (name, sanitize) => {
     expect(box.textContent).toBe('Image not shown');
     expect(box.getAttribute('width')).toBe('120');
     expect(box.getAttribute('height')).toBe('80');
-    expect(box.hasAttribute('style')).toBe(layout);
+    expect(box.hasAttribute('style')).toBe(isRaw);
     expect(dom.querySelector('p')?.textContent).toBe('aImage not shownb');
   });
 
@@ -53,7 +53,7 @@ describe.each(profiles)('%s sanitiser', (name, sanitize) => {
 
   it('uses the same placeholder markup as the renderers', () => {
     const model = fullModel();
-    const rendered = layout ? renderLayout(model).html : renderReading(model);
+    const rendered = isRaw ? renderRaw(model).html : renderRendered(model);
     const fromModel = toDom(rendered).querySelector('span.dr-placeholder')!;
     const fromSanitiser = clean('<img src="https://e.com/a.png" width="50" height="20">').querySelector(
       'span.dr-placeholder',
@@ -111,7 +111,7 @@ describe.each(profiles)('%s sanitiser', (name, sanitize) => {
       '<style>@import url(https://e.com/a.css);@import "b.css"; p{color:red} .a{background:url("https://e.com/x.png")} .b{background:url(data:image/png;base64,AAAA)}</style>' +
         '<p style="background:url(https://e.com/x.png) no-repeat">x</p>',
     );
-    if (!layout) {
+    if (!isRaw) {
       expect(dom.querySelector('style')).toBeNull();
       return;
     }
@@ -125,8 +125,8 @@ describe.each(profiles)('%s sanitiser', (name, sanitize) => {
   });
 });
 
-describe('sanitizeLayout', () => {
-  const clean = (html: string) => toDom(sanitizeLayout(html));
+describe('sanitizeRaw', () => {
+  const clean = (html: string) => toDom(sanitizeRaw(html));
 
   it('keeps style attributes, style elements, classes and ids', () => {
     const dom = clean('<style>.a{color:red}</style><p class="a b" id="x" style="color:blue;margin-left:10mm">t</p>');
@@ -166,8 +166,8 @@ describe('sanitizeLayout', () => {
   });
 });
 
-describe('sanitizeReading', () => {
-  const clean = (html: string) => toDom(sanitizeReading(html));
+describe('sanitizeRendered', () => {
+  const clean = (html: string) => toDom(sanitizeRendered(html));
 
   it('removes style attributes and style elements', () => {
     const dom = clean('<style>p{color:red}</style><p style="color:red">text</p>');
@@ -221,8 +221,8 @@ describe('round trip', () => {
   const expectedInternal = ['#dr-bm-top', '#dr-note-n1', '#dr-noteref-n1'];
 
   it.each([
-    ['layout', () => renderLayout(fullModel()).html, sanitizeLayout],
-    ['reading', () => renderReading(fullModel()), sanitizeReading],
+    ['raw', () => renderRaw(fullModel()).html, sanitizeRaw],
+    ['rendered', () => renderRendered(fullModel()), sanitizeRendered],
   ] as const)('keeps everything the %s renderer wrote', (_name, render, sanitize) => {
     const before = toDom(render());
     const after = toDom(sanitize(render()));

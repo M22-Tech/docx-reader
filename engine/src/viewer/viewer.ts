@@ -4,7 +4,7 @@ import { DocumentError } from '../document-error';
 import type { FormatAdapter, Mode, RenderContext } from '../formats/format-adapter';
 import { adapterFor } from '../formats/registry';
 import { logger, roundMs, timed } from '../logger';
-import { sanitizeReading } from '../sanitize/sanitize';
+import { sanitizeRendered } from '../sanitize/sanitize';
 import { base64ToBytes, firstVisibleBlock, pickMode, viewportContent } from './viewer-helpers';
 
 /** What is open: the bytes and adapter, which modes are rendered, and which can be shown. */
@@ -17,15 +17,15 @@ interface Session {
   /** The modes the document can show (one after a fallback). */
   available: Mode[];
   rendered: Set<Mode>;
-  pageWidthPx?: number;
+  pageWidthPx?: number | undefined;
 }
 
 /** Where the reader was, to restore after a mode switch. */
 type Position = { block: number } | { fraction: number };
 
 const FALLBACK_NOTES: Record<Mode, string> = {
-  layout: "Layout isn't available for this document.",
-  reading: "Reading isn't available for this document.",
+  raw: "Raw mode isn't available for this document.",
+  rendered: "Rendered mode isn't available for this document.",
 };
 // A failure of these says something about the file itself, so the other mode would fail the same way.
 const NO_FALLBACK_CODES = ['encrypted', 'unsupported_version'];
@@ -41,7 +41,7 @@ function toErrorMessage(error: unknown): ErrorMessage {
 }
 
 function otherMode(mode: Mode): Mode {
-  return mode === 'layout' ? 'reading' : 'layout';
+  return mode === 'raw' ? 'rendered' : 'raw';
 }
 
 export function createViewer(send: (message: PageMessage) => void) {
@@ -50,11 +50,11 @@ export function createViewer(send: (message: PageMessage) => void) {
   const noteBar = element('div', 'dr-note-bar');
   noteBar.setAttribute('role', 'status');
   const views: Record<Mode, HTMLElement> = {
-    layout: element('div', 'dr-layout-view'),
-    reading: element('div', 'dr-reading-view'),
+    raw: element('div', 'dr-raw-view'),
+    rendered: element('div', 'dr-rendered-view'),
   };
   noteBar.hidden = true;
-  document.body.append(noteBar, views.layout, views.reading);
+  document.body.append(noteBar, views.raw, views.rendered);
   hideViews();
 
   let session: Session | undefined;
@@ -66,8 +66,8 @@ export function createViewer(send: (message: PageMessage) => void) {
   }
 
   function hideViews(): void {
-    views.layout.hidden = true;
-    views.reading.hidden = true;
+    views.raw.hidden = true;
+    views.rendered.hidden = true;
   }
 
   function applySettings(settings: ViewerSettings): void {
@@ -108,15 +108,15 @@ export function createViewer(send: (message: PageMessage) => void) {
     if (!adapter || !bytes) return;
     const ctx: RenderContext = { signal: s.controller.signal };
     try {
-      if (mode === 'layout') {
-        const renderLayout = adapter.renderLayout?.bind(adapter);
-        if (!renderLayout) throw new DocumentError('unsupported_format', 'Layout is not available.');
-        const { pageWidthPx } = await timed('render', () => renderLayout(bytes, views.layout, ctx));
+      if (mode === 'raw') {
+        const renderRaw = adapter.renderRaw?.bind(adapter);
+        if (!renderRaw) throw new DocumentError('unsupported_format', 'Raw mode is not available.');
+        const { pageWidthPx } = await timed('render', () => renderRaw(bytes, views.raw, ctx));
         s.pageWidthPx = pageWidthPx;
       } else {
-        const html = await timed('render', () => adapter.renderReading(bytes, ctx));
+        const html = await timed('render', () => adapter.renderRendered(bytes, ctx));
         ctx.signal.throwIfAborted();
-        views.reading.innerHTML = await timed('sanitize', () => sanitizeReading(html));
+        views.rendered.innerHTML = await timed('sanitize', () => sanitizeRendered(html));
       }
       ctx.signal.throwIfAborted();
       s.rendered.add(mode);
@@ -128,8 +128,8 @@ export function createViewer(send: (message: PageMessage) => void) {
 
   function show(s: Session, mode: Mode, position: Position | undefined): void {
     s.mode = mode;
-    views.layout.hidden = mode !== 'layout';
-    views.reading.hidden = mode !== 'reading';
+    views.raw.hidden = mode !== 'raw';
+    views.rendered.hidden = mode !== 'rendered';
     viewport?.setAttribute('content', viewportContent(mode, s.pageWidthPx));
     restorePosition(mode, position);
   }
@@ -151,8 +151,8 @@ export function createViewer(send: (message: PageMessage) => void) {
     const startedAt = performance.now();
     applySettings(message.settings);
     hideViews();
-    views.layout.replaceChildren();
-    views.reading.replaceChildren();
+    views.raw.replaceChildren();
+    views.rendered.replaceChildren();
     noteBar.hidden = true;
 
     try {

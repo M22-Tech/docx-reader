@@ -1,7 +1,7 @@
 import type { DocumentModel } from '../model/document-model';
-import { renderLayout as renderModelLayout } from '../model/render-layout';
-import { renderReading as renderModelReading } from '../model/render-reading';
-import { sanitizeLayout } from '../sanitize/sanitize';
+import { renderRaw as renderModelRaw } from '../model/render-raw';
+import { renderRendered as renderModelRendered } from '../model/render-rendered';
+import { sanitizeRaw } from '../sanitize/sanitize';
 import type { Format, FormatAdapter } from './format-adapter';
 
 /** An adapter with both modes for a format whose parser produces the document model; the bytes are parsed once. */
@@ -24,15 +24,15 @@ export function createModelAdapter(
 
   return {
     format,
-    modes: ['layout', 'reading'],
-    async renderLayout(bytes, container, ctx) {
+    modes: ['raw', 'rendered'],
+    async renderRaw(bytes, container, ctx) {
       const model = await load(bytes, ctx.signal);
-      const { html, pageWidthPx } = renderModelLayout(model);
-      container.innerHTML = sanitizeLayout(html);
+      const { html, pageWidthPx } = renderModelRaw(model);
+      container.innerHTML = sanitizeRaw(html);
       return { pageWidthPx };
     },
-    async renderReading(bytes, ctx) {
-      return renderModelReading(await load(bytes, ctx.signal));
+    async renderRendered(bytes, ctx) {
+      return renderModelRendered(await load(bytes, ctx.signal));
     },
   };
 }

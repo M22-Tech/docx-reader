@@ -25,15 +25,26 @@ function labelOrUtf8(label: string | undefined): string {
   }
 }
 
-/** HTML saved with a `.doc`-style name: Reading mode only. */
+/** HTML (also saved with a `.doc`-style name): Raw shows the source text, Rendered the preview. */
 export const htmlAdapter: FormatAdapter = {
   format: 'html',
-  modes: ['reading'],
-  renderReading(bytes, ctx) {
+  modes: ['raw', 'rendered'],
+  renderRaw(bytes, container, ctx) {
+    return new Promise((resolve) => {
+      ctx.signal.throwIfAborted();
+      // Built with text nodes only: the source never goes through an HTML parser or the sanitiser.
+      const source = document.createElement('pre');
+      source.className = 'dr-source';
+      source.textContent = decodeHtml(bytes);
+      container.replaceChildren(source);
+      resolve({});
+    });
+  },
+  renderRendered(bytes, ctx) {
     return new Promise((resolve) => {
       ctx.signal.throwIfAborted();
       const doc = new DOMParser().parseFromString(decodeHtml(bytes), 'text/html');
-      resolve(`<div class="dr-reading">${doc.body.innerHTML}</div>`);
+      resolve(`<div class="dr-rendered">${doc.body.innerHTML}</div>`);
     });
   },
 };

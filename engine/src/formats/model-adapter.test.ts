@@ -9,7 +9,7 @@ describe('createModelAdapter', () => {
   it('offers both modes for its format', () => {
     const adapter = createModelAdapter('rtf', () => Promise.resolve(model([])));
     expect(adapter.format).toBe('rtf');
-    expect(adapter.modes).toEqual(['layout', 'reading']);
+    expect(adapter.modes).toEqual(['raw', 'rendered']);
   });
 
   it('parses once for both modes of the same bytes', async () => {
@@ -18,21 +18,21 @@ describe('createModelAdapter', () => {
     const input = bytes();
     const container = document.createElement('div');
 
-    const reading = await adapter.renderReading(input, ctx());
-    const layout = await adapter.renderLayout?.(input, container, ctx());
+    const rendered = await adapter.renderRendered(input, ctx());
+    const raw = await adapter.renderRaw?.(input, container, ctx());
 
     expect(parse).toHaveBeenCalledTimes(1);
-    expect(reading).toContain('class="dr-reading"');
-    expect(reading).toContain('Hello model');
+    expect(rendered).toContain('class="dr-rendered"');
+    expect(rendered).toContain('Hello model');
     expect(container.querySelector('.dr-sheet')?.textContent).toContain('Hello model');
-    expect(layout?.pageWidthPx).toBe(794);
+    expect(raw?.pageWidthPx).toBe(794);
   });
 
   it('parses again for different bytes', async () => {
     const parse = vi.fn(() => Promise.resolve(model([para('x')])));
     const adapter = createModelAdapter('doc', parse);
-    await adapter.renderReading(bytes(), ctx());
-    await adapter.renderReading(bytes(), ctx());
+    await adapter.renderRendered(bytes(), ctx());
+    await adapter.renderRendered(bytes(), ctx());
     expect(parse).toHaveBeenCalledTimes(2);
   });
 
@@ -45,16 +45,16 @@ describe('createModelAdapter', () => {
     const input = bytes();
     const context = ctx();
 
-    await expect(adapter.renderReading(input, context)).rejects.toThrow('bad');
-    await expect(adapter.renderReading(input, context)).resolves.toContain('ok');
+    await expect(adapter.renderRendered(input, context)).rejects.toThrow('bad');
+    await expect(adapter.renderRendered(input, context)).resolves.toContain('ok');
     expect(parse).toHaveBeenCalledTimes(2);
     expect(parse.mock.calls[0]?.[1]).toBe(context.signal);
   });
 
-  it('sanitises the Layout output', async () => {
+  it('sanitises the Raw output', async () => {
     const adapter = createModelAdapter('rtf', () => Promise.resolve(model([para('safe')])));
     const container = document.createElement('div');
-    await adapter.renderLayout?.(bytes(), container, ctx());
+    await adapter.renderRaw?.(bytes(), container, ctx());
     expect(container.querySelectorAll('script')).toHaveLength(0);
   });
 });

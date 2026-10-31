@@ -2,7 +2,7 @@ import { renderAsync } from 'docx-preview';
 import mammoth from 'mammoth/mammoth.browser.min.js';
 import { DocumentError } from '../../document-error';
 import { logger } from '../../logger';
-import { sanitizeLayout } from '../../sanitize/sanitize';
+import { sanitizeRaw } from '../../sanitize/sanitize';
 import type { FormatAdapter } from '../format-adapter';
 
 const CSS_DPI = 96;
@@ -16,7 +16,7 @@ const PX_PER_UNIT: Record<string, number> = {
 };
 const CSS_LENGTH = /^\s*(\d+(?:\.\d+)?|\.\d+)\s*(px|pt|in|cm|mm)\s*$/i;
 
-const LAYOUT_OPTIONS = {
+const RAW_OPTIONS = {
   inWrapper: true,
   breakPages: true,
   ignoreWidth: false,
@@ -33,7 +33,7 @@ const LAYOUT_OPTIONS = {
   className: 'docx',
 };
 
-const READING_OPTIONS = {
+const RENDERED_OPTIONS = {
   includeDefaultStyleMap: true,
   // mammoth's default map has Heading 1 to 6 but not Title.
   styleMap: ["p[style-name='Title'] => h1:fresh", "p[style-name='Subtitle'] => h2:fresh"],
@@ -53,28 +53,28 @@ function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
-/** docx: docx-preview draws Layout, mammoth produces Reading. */
+/** docx: docx-preview draws Raw, mammoth produces Rendered. */
 export const docxAdapter: FormatAdapter = {
   format: 'docx',
-  modes: ['layout', 'reading'],
-  async renderLayout(bytes, container, ctx) {
+  modes: ['raw', 'rendered'],
+  async renderRaw(bytes, container, ctx) {
     const holder = document.createElement('div');
     try {
-      await renderAsync(toArrayBuffer(bytes), holder, holder, LAYOUT_OPTIONS);
+      await renderAsync(toArrayBuffer(bytes), holder, holder, RAW_OPTIONS);
     } catch (error) {
       throw new DocumentError('corrupt', 'The document could not be read.', { cause: error });
     }
     ctx.signal.throwIfAborted();
     const pageWidthPx = pageWidthFromCss(holder.querySelector<HTMLElement>('section.docx')?.style.width);
-    container.innerHTML = sanitizeLayout(holder.innerHTML);
+    container.innerHTML = sanitizeRaw(holder.innerHTML);
     return { pageWidthPx };
   },
-  async renderReading(bytes, ctx) {
+  async renderRendered(bytes, ctx) {
     ctx.signal.throwIfAborted();
     try {
-      const result = await mammoth.convertToHtml({ arrayBuffer: toArrayBuffer(bytes) }, READING_OPTIONS);
+      const result = await mammoth.convertToHtml({ arrayBuffer: toArrayBuffer(bytes) }, RENDERED_OPTIONS);
       logger.debug('mammoth warnings', { count: result.messages.length });
-      return `<div class="dr-reading">${result.value}</div>`;
+      return `<div class="dr-rendered">${result.value}</div>`;
     } catch (error) {
       throw new DocumentError('corrupt', 'The document could not be read.', { cause: error });
     }

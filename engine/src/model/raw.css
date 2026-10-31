@@ -1,4 +1,4 @@
-.dr-layout-view {
+.dr-raw-view {
   background: var(--canvas, #e5e5e5);
 }
 
@@ -79,4 +79,24 @@
 
 .dr-note-label {
   margin-right: 0.5em;
+}
+
+/* Source files (html): the text exactly as stored, in the page's colours. */
+.dr-raw-view:has(> .dr-source) {
+  padding: 0;
+  background: var(--paper, #fff);
+  min-height: 100vh;
+}
+
+.dr-source {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 16px;
+  background: var(--paper, #fff);
+  color: var(--ink, #000);
+  font-family: ui-monospace, monospace;
+  font-size: var(--text-size, 18px);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

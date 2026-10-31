@@ -44,7 +44,7 @@ export function mmToPx(mm: number): number {
   return mm * PX_PER_MM;
 }
 
-/** The box an image becomes when it can't be shown; `withStyle` adds the size as inline style (Reading output carries no styles). */
+/** The box an image becomes when it can't be shown; `withStyle` adds the size as inline style (Rendered output carries no styles). */
 export function placeholderHtml(widthPx: number | undefined, heightPx: number | undefined, withStyle: boolean): string {
   const width = safeNumber(widthPx);
   const height = safeNumber(heightPx);

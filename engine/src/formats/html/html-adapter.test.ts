@@ -43,23 +43,58 @@ describe('decodeHtml', () => {
 });
 
 describe('htmlAdapter', () => {
-  it('is a Reading-only adapter', () => {
+  it('has both modes', () => {
     expect(htmlAdapter.format).toBe('html');
-    expect(htmlAdapter.modes).toEqual(['reading']);
-    expect('renderLayout' in htmlAdapter).toBe(false);
+    expect(htmlAdapter.modes).toEqual(['raw', 'rendered']);
   });
 
-  it('returns the body wrapped in dr-reading, without the head', async () => {
-    const html = await htmlAdapter.renderReading(
+  describe('renderRaw', () => {
+    const render = async (text: string) => {
+      const container = document.createElement('div');
+      const result = await htmlAdapter.renderRaw?.(ascii(text), container, ctx());
+      return { container, result };
+    };
+
+    it('shows markup as text, so nothing in it can run or load', async () => {
+      const { container } = await render('<p>a</p><script>alert(1)</script><img src=x onerror="alert(2)">');
+      expect(container.querySelectorAll('script, img, p')).toHaveLength(0);
+      expect(container.querySelectorAll('*')).toHaveLength(1);
+      expect(container.querySelector('pre.dr-source')?.textContent).toBe(
+        '<p>a</p><script>alert(1)</script><img src=x onerror="alert(2)">',
+      );
+    });
+
+    it('keeps the text exactly, including whitespace and non-Latin characters', async () => {
+      const text = '<p>\n\t  two  spaces\r\n</p>\n\n  नमस्ते 世界 €\n';
+      const { container } = await render(text);
+      expect(container.querySelector('.dr-source')?.textContent).toBe(text);
+    });
+
+    it('returns no page width', async () => {
+      const { result } = await render('<p>x</p>');
+      expect(result?.pageWidthPx).toBeUndefined();
+    });
+
+    it('rejects when already aborted', async () => {
+      const controller = new AbortController();
+      controller.abort();
+      await expect(
+        htmlAdapter.renderRaw?.(ascii('<p>x</p>'), document.createElement('div'), { signal: controller.signal }),
+      ).rejects.toThrow();
+    });
+  });
+
+  it('returns the body wrapped in dr-rendered, without the head', async () => {
+    const html = await htmlAdapter.renderRendered(
       ascii('<html><head><title>T</title></head><body><h1>Head</h1><p>Body</p></body></html>'),
       ctx(),
     );
-    expect(html).toBe('<div class="dr-reading"><h1>Head</h1><p>Body</p></div>');
+    expect(html).toBe('<div class="dr-rendered"><h1>Head</h1><p>Body</p></div>');
   });
 
   it('rejects when already aborted', async () => {
     const controller = new AbortController();
     controller.abort();
-    await expect(htmlAdapter.renderReading(ascii('<p>x</p>'), { signal: controller.signal })).rejects.toThrow();
+    await expect(htmlAdapter.renderRendered(ascii('<p>x</p>'), { signal: controller.signal })).rejects.toThrow();
   });
 });

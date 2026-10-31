@@ -26,9 +26,9 @@ export function firstVisibleBlock(blocks: readonly { index: number; top: number 
   return blocks.find((block) => block.top >= 0)?.index;
 }
 
-/** The viewport meta content for a mode (Layout fits the page width to the screen). */
+/** The viewport meta content for a mode (Raw fits the page width to the screen). */
 export function viewportContent(mode: Mode, pageWidthPx: number | undefined): string {
-  if (mode === 'layout' && pageWidthPx !== undefined && Number.isFinite(pageWidthPx) && pageWidthPx > 0) {
+  if (mode === 'raw' && pageWidthPx !== undefined && Number.isFinite(pageWidthPx) && pageWidthPx > 0) {
     return `width=${Math.round(pageWidthPx)}, user-scalable=yes, maximum-scale=4`;
   }
   return 'width=device-width, initial-scale=1, user-scalable=no';

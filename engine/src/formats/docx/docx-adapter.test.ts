@@ -2,15 +2,15 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DocumentError } from '../../document-error';
-import { sanitizeReading } from '../../sanitize/sanitize';
+import { sanitizeRendered } from '../../sanitize/sanitize';
 import { docxAdapter, pageWidthFromCss } from './docx-adapter';
 
 const fixture = (name: string) =>
   new Uint8Array(readFileSync(resolve(import.meta.dirname, '../../../../fixtures', name)));
 const ctx = () => ({ signal: new AbortController().signal });
 
-async function reading(name: string): Promise<HTMLElement> {
-  const html = sanitizeReading(await docxAdapter.renderReading(fixture(name), ctx()));
+async function rendered(name: string): Promise<HTMLElement> {
+  const html = sanitizeRendered(await docxAdapter.renderRendered(fixture(name), ctx()));
   const root = document.createElement('div');
   root.innerHTML = html;
   return root;
@@ -36,17 +36,17 @@ describe('pageWidthFromCss', () => {
 describe('docxAdapter', () => {
   it('has both modes', () => {
     expect(docxAdapter.format).toBe('docx');
-    expect(docxAdapter.modes).toEqual(['layout', 'reading']);
+    expect(docxAdapter.modes).toEqual(['raw', 'rendered']);
   });
 
-  it('reads minimal.docx in Reading', async () => {
-    const root = await reading('minimal.docx');
-    expect(root.querySelector('.dr-reading')?.textContent).toBe('Hello, reader.');
+  it('reads minimal.docx in Rendered', async () => {
+    const root = await rendered('minimal.docx');
+    expect(root.querySelector('.dr-rendered')?.textContent).toBe('Hello, reader.');
   });
 
-  describe('features.docx in Reading', () => {
+  describe('features.docx in Rendered', () => {
     it('has the title and headings at their levels', async () => {
-      const root = await reading('features.docx');
+      const root = await rendered('features.docx');
       const headings = Array.from(root.querySelectorAll('h1, h2, h3'), (h) => [h.tagName, h.textContent]);
       expect(headings).toEqual([
         ['H1', 'Feature fixture'],
@@ -58,7 +58,7 @@ describe('docxAdapter', () => {
     });
 
     it('has the list items, table, Hindi text and images', async () => {
-      const root = await reading('features.docx');
+      const root = await rendered('features.docx');
       const items = Array.from(root.querySelectorAll('li:not([id])'), (li) => li.firstChild?.textContent);
       expect(items).toEqual([
         'First numbered item',
@@ -79,8 +79,8 @@ describe('docxAdapter', () => {
     });
 
     it('ends with the footnote and a link back, and moves the external link', async () => {
-      const root = await reading('features.docx');
-      const notes = root.querySelector('.dr-reading')?.lastElementChild;
+      const root = await rendered('features.docx');
+      const notes = root.querySelector('.dr-rendered')?.lastElementChild;
       expect(notes?.tagName).toBe('OL');
       expect(notes?.textContent).toContain('This is footnote one, at the bottom of the page.');
       expect(notes?.querySelector('a[href^="#"]')).not.toBeNull();
@@ -91,7 +91,7 @@ describe('docxAdapter', () => {
   });
 
   it('turns a bad zip into a corrupt DocumentError with the cause', async () => {
-    const error = await docxAdapter.renderReading(fixture('truncated.docx'), ctx()).catch((e: unknown) => e);
+    const error = await docxAdapter.renderRendered(fixture('truncated.docx'), ctx()).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(DocumentError);
     expect((error as DocumentError).code).toBe('corrupt');
     expect((error as DocumentError).cause).toBeDefined();
@@ -100,19 +100,19 @@ describe('docxAdapter', () => {
   it('rejects when already aborted', async () => {
     const controller = new AbortController();
     controller.abort();
-    await expect(docxAdapter.renderReading(fixture('minimal.docx'), { signal: controller.signal })).rejects.toThrow();
+    await expect(docxAdapter.renderRendered(fixture('minimal.docx'), { signal: controller.signal })).rejects.toThrow();
   });
 
-  it('reports corrupt when Layout cannot read the zip', async () => {
+  it('reports corrupt when Raw cannot read the zip', async () => {
     const container = document.createElement('div');
-    const error = await docxAdapter.renderLayout!(fixture('truncated.docx'), container, ctx()).catch((e: unknown) => e);
+    const error = await docxAdapter.renderRaw!(fixture('truncated.docx'), container, ctx()).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(DocumentError);
     expect((error as DocumentError).code).toBe('corrupt');
   });
 
-  it('renders features.docx in Layout with two pages', async () => {
+  it('renders features.docx in Raw with two pages', async () => {
     const container = document.createElement('div');
-    const { pageWidthPx } = await docxAdapter.renderLayout!(fixture('features.docx'), container, ctx());
+    const { pageWidthPx } = await docxAdapter.renderRaw!(fixture('features.docx'), container, ctx());
     expect(pageWidthPx).toBe(794);
     expect(container.querySelectorAll('section.docx')).toHaveLength(2);
     expect(container.textContent).toContain('Fixture header text');

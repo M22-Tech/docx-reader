@@ -1,6 +1,6 @@
 export type Format = 'docx' | 'doc' | 'rtf' | 'odt' | 'html';
 
-export type Mode = 'layout' | 'reading';
+export type Mode = 'raw' | 'rendered';
 
 /** What a render call needs besides the bytes. */
 export interface RenderContext {
@@ -13,8 +13,8 @@ export interface FormatAdapter {
   format: Format;
   /** The modes this format can show. */
   modes: readonly Mode[];
-  /** Draws the document as laid out into `container`; `pageWidthPx` is the page width in CSS pixels. */
-  renderLayout?(bytes: Uint8Array, container: HTMLElement, ctx: RenderContext): Promise<{ pageWidthPx: number }>;
-  /** Returns reflowable HTML for Reading mode (not yet sanitised). */
-  renderReading(bytes: Uint8Array, ctx: RenderContext): Promise<string>;
+  /** Draws Raw mode into `container`: documents as laid out (with `pageWidthPx`, the page width in CSS pixels), source files as text (no page width). */
+  renderRaw?(bytes: Uint8Array, container: HTMLElement, ctx: RenderContext): Promise<{ pageWidthPx?: number }>;
+  /** Returns reflowable HTML for Rendered mode (not yet sanitised). */
+  renderRendered(bytes: Uint8Array, ctx: RenderContext): Promise<string>;
 }

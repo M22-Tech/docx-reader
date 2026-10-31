@@ -25,12 +25,12 @@ describe('base64ToBytes', () => {
 
 describe('pickMode', () => {
   it('keeps the requested mode when available', () => {
-    expect(pickMode('layout', ['layout', 'reading'])).toBe('layout');
-    expect(pickMode('reading', ['reading'])).toBe('reading');
+    expect(pickMode('raw', ['raw', 'rendered'])).toBe('raw');
+    expect(pickMode('rendered', ['rendered'])).toBe('rendered');
   });
 
   it('falls back to the adapter mode', () => {
-    expect(pickMode('layout', ['reading'])).toBe('reading');
+    expect(pickMode('raw', ['rendered'])).toBe('rendered');
   });
 });
 
@@ -52,16 +52,16 @@ describe('firstVisibleBlock', () => {
 });
 
 describe('viewportContent', () => {
-  it('fits Layout to the page width', () => {
-    expect(viewportContent('layout', 793.7)).toBe('width=794, user-scalable=yes, maximum-scale=4');
+  it('fits Raw to the page width', () => {
+    expect(viewportContent('raw', 793.7)).toBe('width=794, user-scalable=yes, maximum-scale=4');
   });
 
-  it('turns zoom off for Reading', () => {
-    expect(viewportContent('reading', undefined)).toBe('width=device-width, initial-scale=1, user-scalable=no');
+  it('turns zoom off for Rendered', () => {
+    expect(viewportContent('rendered', undefined)).toBe('width=device-width, initial-scale=1, user-scalable=no');
   });
 
-  it('uses the device width for Layout without a usable page width', () => {
-    expect(viewportContent('layout', undefined)).toBe('width=device-width, initial-scale=1, user-scalable=no');
-    expect(viewportContent('layout', NaN)).toBe('width=device-width, initial-scale=1, user-scalable=no');
+  it('uses the device width for Raw without a usable page width', () => {
+    expect(viewportContent('raw', undefined)).toBe('width=device-width, initial-scale=1, user-scalable=no');
+    expect(viewportContent('raw', NaN)).toBe('width=device-width, initial-scale=1, user-scalable=no');
   });
 });

@@ -26,14 +26,14 @@ describe('parseSetting', () => {
   });
 
   it('replaces an unknown size with the default', () => {
-    expect(parseSetting(JSON.stringify({ readingTextSize: 21 })).readingTextSize).toBe(18);
+    expect(parseSetting(JSON.stringify({ textSize: 21 })).textSize).toBe(18);
   });
 });
 
 describe('loadSetting and saveSetting', () => {
   it('loads what was stored', async () => {
-    mockRead.mockResolvedValue(JSON.stringify({ theme: 'light', readingTextSize: 24 }));
-    expect(await loadSetting()).toEqual({ ...defaultSetting, theme: 'light', readingTextSize: 24 });
+    mockRead.mockResolvedValue(JSON.stringify({ theme: 'light', textSize: 24 }));
+    expect(await loadSetting()).toEqual({ ...defaultSetting, theme: 'light', textSize: 24 });
   });
 
   it('falls back to the defaults when reading fails', async () => {
@@ -45,7 +45,7 @@ describe('loadSetting and saveSetting', () => {
     const setting = {
       ...defaultSetting,
       theme: 'dark' as const,
-      defaultMode: 'reading' as const,
+      defaultMode: 'rendered' as const,
       keepRecentFiles: false,
     };
     mockWrite.mockResolvedValue();

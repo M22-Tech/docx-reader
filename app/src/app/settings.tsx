@@ -12,7 +12,7 @@ import { Screen } from '../components/ui/screen';
 import { Toggle } from '../components/ui/toggle';
 import { APP_NAME } from '../config/constants';
 import { useRecent } from '../modules/recent/use-recent';
-import { canStepTextSize, stepTextSize } from '../modules/setting/reading-text-size';
+import { canStepTextSize, stepTextSize } from '../modules/setting/text-size';
 import { useSetting } from '../modules/setting/use-setting';
 import { deviceFonts } from '../theme/fonts';
 import { spacing } from '../theme/theme';
@@ -25,7 +25,7 @@ export default function SettingsScreen() {
   const { mode } = useTheme();
   const { setting, update } = useSetting();
   const { clear } = useRecent();
-  const fontFamily = deviceFonts[setting.readingFontStyle];
+  const fontFamily = deviceFonts[setting.fontStyle];
 
   return (
     <>
@@ -48,42 +48,42 @@ export default function SettingsScreen() {
           <Toggle
             accessibilityLabel="Default mode"
             options={[
-              { value: 'layout', label: 'Layout' },
-              { value: 'reading', label: 'Reading' },
+              { value: 'raw', label: 'Raw' },
+              { value: 'rendered', label: 'Rendered' },
             ]}
             value={setting.defaultMode}
             onChange={(defaultMode) => update({ defaultMode })}
           />
         </Card>
 
-        <Card title="Reading text">
+        <Card title="Text">
           <Toggle
-            accessibilityLabel="Reading font style"
+            accessibilityLabel="Font style"
             options={[
               { value: 'sans', label: 'Sans-serif', labelStyle: { fontFamily: deviceFonts.sans } },
               { value: 'serif', label: 'Serif', labelStyle: { fontFamily: deviceFonts.serif } },
             ]}
-            value={setting.readingFontStyle}
-            onChange={(readingFontStyle) => update({ readingFontStyle })}
+            value={setting.fontStyle}
+            onChange={(fontStyle) => update({ fontStyle })}
           />
-          <SettingRow label={`Text size: ${setting.readingTextSize} px`}>
+          <SettingRow label={`Text size: ${setting.textSize} px`}>
             <View style={{ flexDirection: 'row', gap: spacing.xs }}>
               <IconButton
                 icon={AArrowDown}
                 accessibilityLabel="Smaller text"
-                disabled={!canStepTextSize(setting.readingTextSize, 'smaller')}
-                onPress={() => update({ readingTextSize: stepTextSize(setting.readingTextSize, 'smaller') })}
+                disabled={!canStepTextSize(setting.textSize, 'smaller')}
+                onPress={() => update({ textSize: stepTextSize(setting.textSize, 'smaller') })}
               />
               <IconButton
                 icon={AArrowUp}
                 accessibilityLabel="Larger text"
-                disabled={!canStepTextSize(setting.readingTextSize, 'larger')}
-                onPress={() => update({ readingTextSize: stepTextSize(setting.readingTextSize, 'larger') })}
+                disabled={!canStepTextSize(setting.textSize, 'larger')}
+                onPress={() => update({ textSize: stepTextSize(setting.textSize, 'larger') })}
               />
             </View>
           </SettingRow>
           {/* A sample at the real size in px, so it doesn't follow the system font scale. */}
-          <AppText allowFontScaling={false} style={{ fontFamily, fontSize: setting.readingTextSize }}>
+          <AppText allowFontScaling={false} style={{ fontFamily, fontSize: setting.textSize }}>
             {SAMPLE_LINE}
           </AppText>
         </Card>

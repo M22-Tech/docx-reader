@@ -1,9 +1,9 @@
-import { READING_TEXT_SIZES } from '../../config/constants';
-import { canStepTextSize, stepTextSize } from './reading-text-size';
+import { TEXT_SIZES } from '../../config/constants';
+import { canStepTextSize, stepTextSize } from './text-size';
 
 describe('stepTextSize', () => {
   it('steps through the sizes of the spec', () => {
-    expect(READING_TEXT_SIZES).toEqual([14, 16, 18, 20, 22, 24, 28, 32]);
+    expect(TEXT_SIZES).toEqual([14, 16, 18, 20, 22, 24, 28, 32]);
     expect(stepTextSize(18, 'larger')).toBe(20);
     expect(stepTextSize(18, 'smaller')).toBe(16);
     expect(stepTextSize(24, 'larger')).toBe(28);

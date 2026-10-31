@@ -49,7 +49,7 @@ export function ViewerWebView({ ref, backgroundColor, onMessage, onProcessGone }
       setSupportMultipleWindows={false}
       setBuiltInZoomControls
       setDisplayZoomControls={false}
-      // The page sizes its own text: the system font scale would distort Layout pages and add to Reading's sizes.
+      // The page sizes its own text: the system font scale would distort Raw pages and add to Rendered's sizes.
       textZoom={100}
       onShouldStartLoadWithRequest={(request) => {
         logger.debug('web view load request', request.url);

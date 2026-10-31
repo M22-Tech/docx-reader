@@ -1,5 +1,5 @@
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { AArrowDown, AArrowUp, ArrowLeft, BookOpen, FileText } from 'lucide-react-native';
+import { AArrowDown, AArrowUp, ArrowLeft, BookOpen, Code, FileText } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, BackHandler, Linking, View } from 'react-native';
 import { OpenErrorCard } from '../components/open-error-card';
@@ -14,7 +14,7 @@ import { readBase64 } from '../modules/document/document-files';
 import { openDocument, releaseDocument } from '../modules/document/open-document';
 import { codeFromPage, openError, useOpenError, type OpenErrorCode } from '../modules/document/open-error';
 import { loadRecent, setRecentFormat } from '../modules/recent/recent-store';
-import { canStepTextSize, stepTextSize } from '../modules/setting/reading-text-size';
+import { canStepTextSize, stepTextSize } from '../modules/setting/text-size';
 import { useSetting } from '../modules/setting/use-setting';
 import { logger } from '../logger';
 import { spacing } from '../theme/theme';
@@ -22,8 +22,17 @@ import { useTheme } from '../theme/theme-provider';
 import { BridgeClient } from '../viewer/bridge-client';
 import { largeFileLine, looksLikeOutOfMemory } from '../viewer/large-file';
 import { openableLink } from '../viewer/link';
-import { canSwitchMode, freshViewState, otherMode, type ViewState } from '../viewer/view-state';
+import {
+  canSwitchMode,
+  freshViewState,
+  otherMode,
+  textReflows,
+  toggleIcon,
+  type ViewState,
+} from '../viewer/view-state';
 import { ViewerWebView, type ViewerWebViewHandle } from '../viewer/viewer-web-view';
+
+const TOGGLE_ICONS = { 'book-open': BookOpen, 'file-text': FileText, code: Code };
 
 function askToOpenLink(href: string): void {
   const address = openableLink(href);
@@ -111,11 +120,11 @@ export default function ViewerScreen() {
   const settingsInput = useMemo(
     () => ({
       theme: themeMode,
-      readingTextSize: setting.readingTextSize,
-      readingFontStyle: setting.readingFontStyle,
+      textSize: setting.textSize,
+      fontStyle: setting.fontStyle,
       colors: { ink: colors.text, paper: colors.background },
     }),
-    [themeMode, setting.readingTextSize, setting.readingFontStyle, colors.text, colors.background],
+    [themeMode, setting.textSize, setting.fontStyle, colors.text, colors.background],
   );
   const fail = useCallback((documentId: string, fileName: string, code: OpenErrorCode) => {
     // The error card replaces the web view, which unmounts it so it isn't reused.
@@ -149,6 +158,7 @@ export default function ViewerScreen() {
           setState((current) => ({
             ...(current.id === document.id ? current : freshViewState(document.id)),
             shownMode: message.mode,
+            format: message.format,
             otherModeAvailable: message.otherModeAvailable,
             switching: false,
           }));
@@ -182,11 +192,11 @@ export default function ViewerScreen() {
   }, [view]);
 
   const stepText = useCallback(
-    (step: 'smaller' | 'larger') => update({ readingTextSize: stepTextSize(setting.readingTextSize, step) }),
-    [setting.readingTextSize, update],
+    (step: 'smaller' | 'larger') => update({ textSize: stepTextSize(setting.textSize, step) }),
+    [setting.textSize, update],
   );
 
-  const showReadingControls = view.shownMode === 'reading' && !view.error;
+  const showTextControls = textReflows(view) && !view.error;
   const showToggle = canSwitchMode(view) || (view.switching && !view.error);
   const loading = Boolean(document) && !view.shownMode && !view.error;
   const largeLine = document && loading ? largeFileLine(document.sizeBytes) : null;
@@ -202,26 +212,26 @@ export default function ViewerScreen() {
           headerTitle: () => (document ? <FileName name={document.name} bold /> : null),
           headerRight: () => (
             <View style={{ flexDirection: 'row' }}>
-              {showReadingControls ? (
+              {showTextControls ? (
                 <>
                   <IconButton
                     icon={AArrowDown}
                     accessibilityLabel="Smaller text"
-                    disabled={!canStepTextSize(setting.readingTextSize, 'smaller')}
+                    disabled={!canStepTextSize(setting.textSize, 'smaller')}
                     onPress={() => stepText('smaller')}
                   />
                   <IconButton
                     icon={AArrowUp}
                     accessibilityLabel="Larger text"
-                    disabled={!canStepTextSize(setting.readingTextSize, 'larger')}
+                    disabled={!canStepTextSize(setting.textSize, 'larger')}
                     onPress={() => stepText('larger')}
                   />
                 </>
               ) : null}
               {showToggle && view.shownMode ? (
                 <IconButton
-                  icon={view.shownMode === 'layout' ? BookOpen : FileText}
-                  accessibilityLabel={view.shownMode === 'layout' ? 'Switch to Reading mode' : 'Switch to Layout mode'}
+                  icon={TOGGLE_ICONS[toggleIcon(view)]}
+                  accessibilityLabel={view.shownMode === 'raw' ? 'Switch to Rendered mode' : 'Switch to Raw mode'}
                   disabled={view.switching}
                   onPress={switchMode}
                 />

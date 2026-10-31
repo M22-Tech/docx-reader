@@ -24,7 +24,7 @@ const logElement = byId('log');
 
 let theme: 'light' | 'dark' = 'light';
 let sizeIndex = TEXT_SIZES.indexOf(18);
-let mode: Mode = 'layout';
+let mode: Mode = 'raw';
 
 function settings(): ViewerSettings {
   return {
@@ -80,7 +80,7 @@ fileInput.addEventListener('change', () => {
 });
 
 modeButton.addEventListener('click', () => {
-  mode = mode === 'layout' ? 'reading' : 'layout';
+  mode = mode === 'raw' ? 'rendered' : 'raw';
   renderControls();
   send({ type: 'setMode', mode }, `setMode ${mode}`);
 });

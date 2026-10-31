@@ -10,16 +10,16 @@ import {
 /** What the app tells the page about looks; `colors` come from the current palette. */
 export interface ViewerSettingsInput {
   theme: ThemeMode;
-  readingTextSize: number;
-  readingFontStyle: ViewerSettings['fontStyle'];
+  textSize: number;
+  fontStyle: ViewerSettings['fontStyle'];
   colors: { ink: string; paper: string };
 }
 
 export function toViewerSettings(input: ViewerSettingsInput): ViewerSettings {
   return {
     theme: input.theme,
-    textSizePx: input.readingTextSize,
-    fontStyle: input.readingFontStyle,
+    textSizePx: input.textSize,
+    fontStyle: input.fontStyle,
     colors: { ink: input.colors.ink, paper: input.colors.paper },
   };
 }

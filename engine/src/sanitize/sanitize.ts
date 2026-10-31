@@ -1,7 +1,7 @@
 import createDOMPurify, { type Config } from 'dompurify';
 import { placeholderHtml, safeNumber } from '../model/html';
 
-type Profile = 'layout' | 'reading';
+type Profile = 'raw' | 'rendered';
 
 const FORBIDDEN_TAGS = [
   'script',
@@ -23,12 +23,12 @@ const FORBIDDEN_TAGS = [
   'template',
 ];
 const FORBIDDEN_ATTRS = ['target', 'ping', 'srcset', 'background', 'poster'];
-const READING_TAGS = [
+const RENDERED_TAGS = [
   ...['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'b', 'em', 'i', 'u', 's', 'sup', 'sub', 'br', 'hr'],
   ...['a', 'img', 'span', 'div', 'section', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'caption'],
   ...['ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'figure', 'figcaption'],
 ];
-const READING_ATTRS = [
+const RENDERED_ATTRS = [
   'id',
   'class',
   'colspan',
@@ -53,8 +53,8 @@ const CSS_ESCAPE = /\\(?:([0-9a-f]{1,6})[ \t\n\r\f]?|(\r\n|[\n\r\f])|(.))/gi;
 
 function createConfig(profile: Profile): Config {
   const base: Config = { FORBID_TAGS: FORBIDDEN_TAGS, FORBID_ATTR: FORBIDDEN_ATTRS, ALLOWED_URI_REGEXP: ALLOWED_URI };
-  if (profile === 'layout') return { ...base, USE_PROFILES: { html: true }, FORCE_BODY: true };
-  return { ...base, ALLOWED_TAGS: READING_TAGS, ALLOWED_ATTR: READING_ATTRS, ALLOW_DATA_ATTR: true };
+  if (profile === 'raw') return { ...base, USE_PROFILES: { html: true }, FORCE_BODY: true };
+  return { ...base, ALLOWED_TAGS: RENDERED_TAGS, ALLOWED_ATTR: RENDERED_ATTRS, ALLOW_DATA_ATTR: true };
 }
 
 function unescapeCss(css: string): string {
@@ -100,15 +100,15 @@ function replaceWithPlaceholder(img: Element, withStyle: boolean): void {
 }
 
 function createPurifier(profile: Profile) {
-  const layout = profile === 'layout';
+  const isRaw = profile === 'raw';
   const purify = createDOMPurify(window);
   purify.setConfig(createConfig(profile));
 
   purify.addHook('uponSanitizeElement', (node, data) => {
     if (data.tagName === 'img') {
       const img = node as Element;
-      if (!IMAGE_SRC.test(img.getAttribute('src') ?? '')) replaceWithPlaceholder(img, layout);
-    } else if (layout && data.tagName === 'style') {
+      if (!IMAGE_SRC.test(img.getAttribute('src') ?? '')) replaceWithPlaceholder(img, isRaw);
+    } else if (isRaw && data.tagName === 'style') {
       node.textContent = cleanCss(node.textContent ?? '');
     }
   });
@@ -117,9 +117,9 @@ function createPurifier(profile: Profile) {
     if (data.attrName === 'data-external-href') {
       // Only the sanitiser sets this one, below.
       data.keepAttr = false;
-    } else if (layout && data.attrName === 'style') {
+    } else if (isRaw && data.attrName === 'style') {
       data.attrValue = cleanCss(data.attrValue);
-    } else if (!layout && data.attrName === 'class') {
+    } else if (!isRaw && data.attrName === 'class') {
       data.attrValue = data.attrValue
         .split(/\s+/)
         .filter((name) => name.startsWith('dr-'))
@@ -143,15 +143,15 @@ function createPurifier(profile: Profile) {
   return purify;
 }
 
-const layoutPurify = createPurifier('layout');
-const readingPurify = createPurifier('reading');
+const rawPurify = createPurifier('raw');
+const renderedPurify = createPurifier('rendered');
 
-/** Cleans HTML for Layout mode: keeps `class`, `id`, `style` and `<style>`, with remote `url()` removed. */
-export function sanitizeLayout(html: string): string {
-  return layoutPurify.sanitize(html);
+/** Cleans HTML for Raw mode: keeps `class`, `id`, `style` and `<style>`, with remote `url()` removed. */
+export function sanitizeRaw(html: string): string {
+  return rawPurify.sanitize(html);
 }
 
-/** Cleans HTML for Reading mode: an allow-list of tags, no styles, only `dr-` classes. */
-export function sanitizeReading(html: string): string {
-  return readingPurify.sanitize(html);
+/** Cleans HTML for Rendered mode: an allow-list of tags, no styles, only `dr-` classes. */
+export function sanitizeRendered(html: string): string {
+  return renderedPurify.sanitize(html);
 }

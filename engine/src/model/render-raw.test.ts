@@ -14,10 +14,10 @@ import {
   table,
   toDom,
 } from './test-models';
-import { renderLayout } from './render-layout';
+import { renderRaw } from './render-raw';
 
 function render(...args: Parameters<typeof model>) {
-  const result = renderLayout(model(...args));
+  const result = renderRaw(model(...args));
   return { ...result, dom: toDom(result.html) };
 }
 
@@ -27,7 +27,7 @@ function declarations(el: Element): Record<string, string> {
   return Object.fromEntries(entries);
 }
 
-describe('renderLayout sheet', () => {
+describe('renderRaw sheet', () => {
   it('uses A4 with 2.54 cm margins when the model has no page', () => {
     const { dom, pageWidthPx } = render([para('x')]);
     const sheet = dom.querySelector<HTMLElement>('.dr-sheet')!;
@@ -61,7 +61,7 @@ describe('renderLayout sheet', () => {
   });
 });
 
-describe('renderLayout paragraphs and runs', () => {
+describe('renderRaw paragraphs and runs', () => {
   it('turns marks into tags', () => {
     const { dom } = render([
       para([
@@ -179,7 +179,7 @@ describe('renderLayout paragraphs and runs', () => {
   });
 });
 
-describe('renderLayout tables', () => {
+describe('renderRaw tables', () => {
   it('renders header rows, spans, widths and backgrounds', () => {
     const { dom } = render([
       table(
@@ -209,7 +209,7 @@ describe('renderLayout tables', () => {
   });
 });
 
-describe('renderLayout inlines', () => {
+describe('renderRaw inlines', () => {
   it('renders an image with a data URL and size', () => {
     const { dom } = render([para([pngImage(120, 80, 'alt text')])]);
     const img = dom.querySelector('img')!;
@@ -269,7 +269,7 @@ describe('renderLayout inlines', () => {
   });
 });
 
-describe('renderLayout escaping', () => {
+describe('renderRaw escaping', () => {
   it('keeps markup in text as text', () => {
     const { dom } = render([para('<script>alert(1)</script> & more')]);
     expect(dom.querySelector('script')).toBeNull();

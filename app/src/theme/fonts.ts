@@ -4,7 +4,7 @@ export const fonts = {
   bold: 'Arimo_700Bold',
 } as const;
 
-/** The device's own fonts, which Reading mode uses so every script displays. */
+/** The device's own fonts, which Rendered mode uses so every script displays. */
 export const deviceFonts = {
   serif: 'serif',
   sans: 'sans-serif',

@@ -18,7 +18,7 @@ function pageValue(value: number | undefined, fallback: number, min: number): nu
 }
 
 /** Renders the model as one sheet at the page width; `pageWidthPx` is the width in CSS pixels. */
-export function renderLayout(model: DocumentModel): { html: string; pageWidthPx: number } {
+export function renderRaw(model: DocumentModel): { html: string; pageWidthPx: number } {
   const page = model.page ?? DEFAULT_PAGE;
   const width = pageValue(page.widthMm, DEFAULT_PAGE.widthMm, 1);
   const top = pageValue(page.marginTopMm, DEFAULT_PAGE.marginTopMm, 0);
@@ -27,7 +27,7 @@ export function renderLayout(model: DocumentModel): { html: string; pageWidthPx:
   const left = pageValue(page.marginLeftMm, DEFAULT_PAGE.marginLeftMm, 0);
   const style = styleAttr([`width:${width}mm`, `padding:${top}mm ${right}mm ${bottom}mm ${left}mm`]);
   return {
-    html: `<div class="dr-sheet"${style}>${renderBody(model, 'layout')}</div>`,
+    html: `<div class="dr-sheet"${style}>${renderBody(model, 'raw')}</div>`,
     pageWidthPx: Math.round(mmToPx(width)),
   };
 }

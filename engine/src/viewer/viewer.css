@@ -18,16 +18,16 @@ body {
   display: none !important;
 }
 
-.dr-layout-view {
+.dr-raw-view {
   padding: 16px 0;
 }
 
-.dr-reading-view {
+.dr-rendered-view {
   background: var(--paper);
   min-height: 100vh;
 }
 
-.dr-reading-view > .dr-reading {
+.dr-rendered-view > .dr-rendered {
   box-sizing: border-box;
   padding: 16px;
 }

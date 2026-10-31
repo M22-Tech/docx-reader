@@ -28,7 +28,7 @@ export function textBase64(text: string): string {
   return Buffer.from(text, 'utf-8').toString('base64');
 }
 
-export function openMessage(base64: string, mode: 'layout' | 'reading' = 'reading', name = 'test'): AppMessage {
+export function openMessage(base64: string, mode: 'raw' | 'rendered' = 'rendered', name = 'test'): AppMessage {
   return { type: 'open', name, base64, mode, settings: LIGHT };
 }
 

@@ -355,7 +355,7 @@ describe('errors', () => {
 
 describe('registry', () => {
   it('has a doc adapter with both modes', () => {
-    expect(adapterFor('doc')).toMatchObject({ format: 'doc', modes: ['layout', 'reading'] });
+    expect(adapterFor('doc')).toMatchObject({ format: 'doc', modes: ['raw', 'rendered'] });
   });
 });
 

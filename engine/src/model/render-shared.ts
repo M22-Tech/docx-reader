@@ -83,23 +83,23 @@ function isVisible(inline: Inline): boolean {
 }
 
 function renderParagraph(p: Paragraph, ctx: Context, dataBlock: string): string {
-  const layout = ctx.mode === 'layout';
+  const isRaw = ctx.mode === 'raw';
   const empty = !p.list && !p.inlines.some(isVisible);
   const inner = renderInlines(p.inlines, ctx);
-  // Reading drops empty paragraphs, but keeps their anchors so links to them still work.
-  if (!layout && empty && inner === '') return '';
+  // Rendered drops empty paragraphs, but keeps their anchors so links to them still work.
+  if (!isRaw && empty && inner === '') return '';
 
   const tag = p.headingLevel ? `h${p.headingLevel}` : 'p';
   const classes: string[] = [];
-  if (layout && p.headingLevel) classes.push('dr-h');
+  if (isRaw && p.headingLevel) classes.push('dr-h');
   if (p.list) classes.push('dr-li');
-  if (!layout && (p.align === 'center' || p.align === 'right')) classes.push(`dr-${p.align}`);
+  if (!isRaw && (p.align === 'center' || p.align === 'right')) classes.push(`dr-${p.align}`);
 
   const marker = p.list ? `<span class="dr-marker">${escapeHtml(p.list.marker)}</span>` : '';
-  const level = !layout && p.list ? ` data-level="${Math.max(0, Math.trunc(safeNumber(p.list.level) ?? 0))}"` : '';
+  const level = !isRaw && p.list ? ` data-level="${Math.max(0, Math.trunc(safeNumber(p.list.level) ?? 0))}"` : '';
   const classAttr = classes.length > 0 ? ` class="${classes.join(' ')}"` : '';
-  const style = layout ? paragraphStyle(p) : '';
-  const filler = layout && empty ? '<br>' : '';
+  const style = isRaw ? paragraphStyle(p) : '';
+  const filler = isRaw && empty ? '<br>' : '';
   return `<${tag}${classAttr}${style}${level}${dataBlock}>${marker}${inner}${filler}</${tag}>`;
 }
 
@@ -143,7 +143,7 @@ function renderRun(text: string, marks: Marks | undefined, ctx: Context): string
   for (const [key, tag] of MARK_TAGS) {
     if (marks[key]) html = `<${tag}>${html}</${tag}>`;
   }
-  if (ctx.mode !== 'layout') return html;
+  if (ctx.mode !== 'raw') return html;
 
   const color = safeColor(marks.color);
   const highlight = safeColor(marks.highlight);
@@ -163,7 +163,7 @@ function renderInline(inline: Exclude<Inline, { kind: 'text' }>, ctx: Context): 
     case 'lineBreak':
       return '<br>';
     case 'tab':
-      return ctx.mode === 'layout' ? '<span class="dr-tab"></span>' : ' ';
+      return ctx.mode === 'raw' ? '<span class="dr-tab"></span>' : ' ';
     case 'image':
       return renderImage(inline, ctx);
     case 'link': {
@@ -185,7 +185,7 @@ function renderInline(inline: Exclude<Inline, { kind: 'text' }>, ctx: Context): 
 function renderImage(image: ImageInline, ctx: Context): string {
   const width = safeNumber(image.widthPx);
   const height = safeNumber(image.heightPx);
-  if (!image.src) return placeholderHtml(width, height, ctx.mode === 'layout');
+  if (!image.src) return placeholderHtml(width, height, ctx.mode === 'raw');
   const size = (width !== undefined ? ` width="${width}"` : '') + (height !== undefined ? ` height="${height}"` : '');
   const src = `data:${image.src.mime};base64,${bytesToBase64(image.src.data)}`;
   return `<img src="${src}"${size} alt="${escapeAttr(image.alt ?? '')}">`;
@@ -202,8 +202,8 @@ function renderNotes(notes: Note[], ctx: Context): string {
 }
 
 function renderTable(table: Table, ctx: Context, dataBlock: string): string {
-  const layout = ctx.mode === 'layout';
-  const widths = layout ? (table.columnWidthsMm ?? []) : [];
+  const isRaw = ctx.mode === 'raw';
+  const widths = isRaw ? (table.columnWidthsMm ?? []) : [];
   const cols = widths.map((w) => `<col${styleAttr([lengthDecl('width', w, 'mm')])}>`).join('');
   const colgroup = cols ? `<colgroup>${cols}</colgroup>` : '';
 
@@ -217,13 +217,13 @@ function renderTable(table: Table, ctx: Context, dataBlock: string): string {
 }
 
 function renderRow(row: TableRow, ctx: Context): string {
-  const layout = ctx.mode === 'layout';
+  const isRaw = ctx.mode === 'raw';
   const tag = row.header ? 'th' : 'td';
   const cells = row.cells.map((cell) => {
     const colSpan = (cell.colSpan ?? 1) > 1 ? ` colspan="${Math.trunc(cell.colSpan!)}"` : '';
     const rowSpan = (cell.rowSpan ?? 1) > 1 ? ` rowspan="${Math.trunc(cell.rowSpan!)}"` : '';
     const background = safeColor(cell.background);
-    const style = layout
+    const style = isRaw
       ? styleAttr([lengthDecl('width', cell.widthMm, 'mm'), background ? `background-color:${background}` : undefined])
       : '';
     return `<${tag}${colSpan}${rowSpan}${style}>${renderBlocks(cell.blocks, ctx)}</${tag}>`;

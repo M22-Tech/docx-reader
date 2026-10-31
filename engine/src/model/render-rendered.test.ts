@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { renderReading } from './render-reading';
+import { renderRendered } from './render-rendered';
 import {
   anchor,
   cell,
@@ -18,14 +18,14 @@ import {
 } from './test-models';
 
 function render(...args: Parameters<typeof model>) {
-  return toDom(renderReading(model(...args)));
+  return toDom(renderRendered(model(...args)));
 }
 
-describe('renderReading', () => {
-  it('wraps the content in dr-reading', () => {
+describe('renderRendered', () => {
+  it('wraps the content in dr-rendered', () => {
     const dom = render([para('x')]);
-    expect(dom.firstElementChild?.className).toBe('dr-reading');
-    expect(dom.querySelector('.dr-reading > p')?.textContent).toBe('x');
+    expect(dom.firstElementChild?.className).toBe('dr-rendered');
+    expect(dom.querySelector('.dr-rendered > p')?.textContent).toBe('x');
   });
 
   it('writes no style attribute for any kind of content', () => {
@@ -35,7 +35,7 @@ describe('renderReading', () => {
       para([image(30, 20), run('c', { color: '#ff0000', highlight: '#ffff00', fontFamily: 'Arial', fontSizePt: 20 })]),
       table([row([cell('a', { widthMm: 40, background: '#cccccc' })])], [40]),
     );
-    const dom = toDom(renderReading(full));
+    const dom = toDom(renderRendered(full));
     expect(dom.querySelectorAll('[style]')).toHaveLength(0);
     expect(dom.querySelector('colgroup')).toBeNull();
     expect(dom.querySelector('span:not([class])')).toBeNull();
@@ -100,7 +100,7 @@ describe('renderReading', () => {
     expect(render([{ kind: 'pageBreak' }]).querySelector('hr.dr-page-break[data-block="0"]')).not.toBeNull();
   });
 
-  it('renders links, anchors and notes like Layout', () => {
+  it('renders links, anchors and notes like Raw', () => {
     const dom = render(
       [
         para([

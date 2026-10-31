@@ -8,7 +8,7 @@ const documentErrorCode = z.enum([
   'corrupt',
   'timeout',
 ]);
-const mode = z.enum(['layout', 'reading']);
+const mode = z.enum(['raw', 'rendered']);
 const format = z.enum(['docx', 'doc', 'rtf', 'odt', 'html']);
 
 export const settingsSchema = z.object({
