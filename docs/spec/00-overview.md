@@ -2,7 +2,7 @@
 
 DocX Reader opens the text documents people receive on their phone (an agreement from a client, a job description from a recruiter, a CV template) and shows them well on a small screen. It only reads: it does not edit, convert or send documents anywhere.
 
-Two promises shape everything else: it opens the common Word and OpenDocument text formats without needing another app, and nothing leaves the device. There is no account, no server, no analytics and no internet permission.
+What it is for: opening the common Word and OpenDocument text formats without needing another app, and reading them comfortably, either as the author laid them out or reflowed with the reader's own font style, text size and light or dark theme. It works entirely on the device: there is no account, no server, no analytics and no internet permission (`05-privacy.md`).
 
 ## Glossary
 

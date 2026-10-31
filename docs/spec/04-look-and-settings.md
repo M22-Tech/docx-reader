@@ -38,7 +38,7 @@ Saved on the device and applied at once:
 - **Default mode**: Raw or Rendered (default Raw). Used when a document opens, for every format.
 - **Text**: font style serif or sans (default sans) with each option previewed in its own font, and the text size (`03-viewer.md`), with a sample line. Used in Rendered mode; the size also applies to source text in Raw mode.
 - **Recent files**: "Keep recent files" on or off (default on; off clears them, after a confirmation) and "Clear recent files".
-- **About**: app name, version, "Your documents never leave this phone." and a link-card "Open-source licences" that opens a screen listing each library with its licence text, bundled with the app.
+- **About**: app name, version, the line "Read Word and OpenDocument files your way: laid out as in Word, or reflowed in the font style, text size and theme you like." and, last in the card, a plain "Open-source licences" row (text and a chevron, no icon or description) that opens a screen listing each library and font shipped in the app with its licence text.
 
 ## Fixed values
 

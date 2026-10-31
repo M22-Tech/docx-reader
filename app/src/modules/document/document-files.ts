@@ -4,6 +4,10 @@ import { Directory, File, Paths } from 'expo-file-system';
 /** `recent` keeps copies of recent files; `open` holds the copy of a document opened with recent files off. */
 export type CopyFolder = 'recent' | 'open';
 
+/** The recent list sits in the `recent` folder beside the copies; it is not a copy itself. */
+const RECENT_LIST_FILE = 'recent.json';
+const RECENT_LIST_TEMP_FILE = 'recent.json.tmp';
+
 const ID_LENGTH = 10;
 const BASE36 = '0123456789abcdefghijklmnopqrstuvwxyz';
 
@@ -89,4 +93,22 @@ export function clearOpenFolder(): void {
   } catch {
     // Nothing more to do: the folder is unreachable or gone.
   }
+}
+
+/** The text of the recent list file, or null when there is none yet. */
+export async function readRecentListFile(): Promise<string | null> {
+  const file = new File(folderOf('recent'), RECENT_LIST_FILE);
+  return file.exists ? file.text() : null;
+}
+
+/**
+ * Replaces the recent list file. The text goes to a temporary file in the same folder and is then moved over
+ * the old file, so a crash leaves either the old list or the new one, never half of one.
+ */
+export async function writeRecentListFile(text: string): Promise<void> {
+  const directory = folderOf('recent');
+  directory.create({ intermediates: true, idempotent: true });
+  const temporary = new File(directory, RECENT_LIST_TEMP_FILE);
+  await temporary.write(text);
+  await temporary.move(new File(directory, RECENT_LIST_FILE), { overwrite: true });
 }

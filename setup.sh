@@ -85,6 +85,10 @@ if $has_app; then
     step "App: copying the viewer into the app"
     (cd app && npm run engine:sync)
   fi
+  if grep -q '"licences"' app/package.json; then
+    step "App: collecting the open-source licences"
+    (cd app && npm run licences)
+  fi
 fi
 
 step "Done"

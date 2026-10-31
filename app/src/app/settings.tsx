@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 import { Stack, useRouter } from 'expo-router';
 import { AArrowDown, AArrowUp, ArrowLeft, Trash2 } from 'lucide-react-native';
 import { View } from 'react-native';
+import { LinkRow } from '../components/settings/link-row';
 import { SettingRow } from '../components/settings/setting-row';
 import { ThemeToggleButton } from '../components/theme-toggle-button';
 import { AppText } from '../components/ui/app-text';
@@ -119,7 +120,11 @@ export default function SettingsScreen() {
         <Card title="About">
           <AppText bold>{APP_NAME}</AppText>
           <AppText muted>Version {Constants.expoConfig?.version ?? ''}</AppText>
-          <AppText>Your documents never leave this phone.</AppText>
+          <AppText>
+            Read Word and OpenDocument files your way: laid out as in Word, or reflowed in the font style, text size and
+            theme you like.
+          </AppText>
+          <LinkRow label="Open-source licences" onPress={() => router.push('/licences')} />
         </Card>
       </Screen>
     </>

@@ -16,13 +16,17 @@
   "scripts": {
     "start": "expo start",
     "engine:sync": "node scripts/engine-sync.mjs",
+    "licences": "node scripts/licences.mjs",
     "android": "../android-env.sh expo run:android",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "format": "prettier --write . --ignore-path ../.prettierignore",
     "format:check": "prettier --check . --ignore-path ../.prettierignore",
-    "check": "npm run lint && npm run typecheck && npm run test"
+    "check": "npm run lint && npm run typecheck && npm run test && npm run test:plugins",
+    "build:apk": "node scripts/build-release.mjs apk",
+    "build:aab": "node scripts/build-release.mjs aab",
+    "test:plugins": "node --test plugins/plugins.test.js plugins/source-map-packages.test.js"
   },
   "dependencies": {
     "@expo-google-fonts/arimo": "0.4.3",
@@ -64,7 +68,13 @@
   "jest": {
     "preset": "jest-expo",
     "moduleNameMapper": {
-      "/viewer/generated/viewer-html$": "<rootDir>/src/viewer/viewer-html.stub.ts"
-    }
+      "/viewer/generated/viewer-html$": "<rootDir>/src/viewer/viewer-html.stub.ts",
+      "/licences/generated/licences\\.json$": "<rootDir>/src/licences/licences.stub.json"
+    },
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/plugins/",
+      "/android/"
+    ]
   }
 }

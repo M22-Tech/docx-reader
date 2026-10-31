@@ -17,7 +17,49 @@ Without a cable (Android 11 and later): Developer options → Wireless debugging
 
 After changing `app.json`, the icons, the splash or a native dependency, regenerate the Android project before running again: `npx expo prebuild --platform android --clean && npm run android` (`android/` is generated and gitignored). If the launcher still shows the old icon, uninstall the app from the phone first; some launchers cache icons.
 
-`npm run android` goes through `../android-env.sh`, which picks a JDK 17 and the Android SDK whatever your shell's `JAVA_HOME` is. Production builds come later.
+`npm run android` goes through `../android-env.sh`, which picks a JDK 17 and the Android SDK whatever your shell's `JAVA_HOME` is.
+
+## Licences
+
+`npm run licences` collects the licences of the code that ships in the app, each with its licence text, deduplicated by name and version:
+
+- The JavaScript in the app bundle: it runs `npx expo export --platform android --source-maps` into a temporary folder (deleted afterwards) and takes each package named in the bundle's source map (`scripts/source-map-packages.js`, tested in `plugins/source-map-packages.test.js`). Build tools such as Metro, Babel and the type checker are not in the bundle and so are not listed.
+- The native modules autolinked on Android (`npx expo-modules-autolinking resolve` for Expo modules and `npx expo-modules-autolinking react-native-config` for React Native community modules, Expo's stand-in for `react-native config`, which needs the community CLI) and `react-native` itself.
+- The engine's production dependencies, whose libraries are bundled into the viewer page.
+- The Arimo font and DocX Reader itself.
+
+Android libraries that Gradle pulls in (androidx and the like) are not covered. The script writes `src/licences/generated/licences.json` (generated and gitignored, like the viewer files) for the Open-source licences screens in Settings, prints how many entries it wrote and the packages that ship no licence text (those show the licence name only). It takes about ten seconds because of the export. `setup.sh` and the release builds run it; run it again after changing a dependency. Jest uses a small stub instead of the generated file.
+
+## Production
+
+Release builds have no internet permission and exclude the recent files folder from backups (`plugins/with-release-privacy.js`, `docs/spec/05-privacy.md`). Debug builds keep the permission for the development server.
+
+### Upload key
+
+Create the upload key once, with JDK 17's `keytool` (through `android-env.sh`) and outside the repo:
+
+```
+mkdir -p ~/.android-keys
+../android-env.sh sh -c 'keytool -genkeypair -v -storetype PKCS12 -keystore ~/.android-keys/docx-reader-upload.p12 -alias upload -keyalg RSA -keysize 2048 -validity 10000'
+```
+
+Then put its details in `~/.gradle/gradle.properties` (never in the repo):
+
+```
+DOCX_READER_UPLOAD_STORE_FILE=/Users/you/.android-keys/docx-reader-upload.p12
+DOCX_READER_UPLOAD_STORE_PASSWORD=...
+DOCX_READER_UPLOAD_KEY_ALIAS=upload
+DOCX_READER_UPLOAD_KEY_PASSWORD=...
+```
+
+Back the key file and its passwords up somewhere safe: if you lose the key, you can't publish updates under the same Play listing, unless Play App Signing is on (then Google holds the app signing key and can reset a lost upload key).
+
+### Building
+
+- `npm run build:apk` builds `android/app/build/outputs/apk/release/app-release.apk`, to install on a phone (`adb install -r`).
+- `npm run build:aab` builds `android/app/build/outputs/bundle/release/app-release.aab`, to upload to the Play Console.
+
+Both run `engine:sync` and `licences`, regenerate `android/` (`expo prebuild --clean`) and run Gradle through `../android-env.sh`. Without the four Gradle properties above the release is signed with the debug key and the script warns that it can't go to the Play Store. `android.versionCode` in `app.json` is 1; raise it for every upload.
 
 ## Engine sync
 

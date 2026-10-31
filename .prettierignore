@@ -7,3 +7,5 @@ test-results
 .expo
 app/src/viewer/generated
 *.md
+app/src/licences/generated
+app/android

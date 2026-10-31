@@ -28,3 +28,4 @@ app/src/viewer/generated/
 *.p12
 *.key
 *.pem
+app/src/licences/generated/

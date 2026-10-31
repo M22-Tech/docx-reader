@@ -1,12 +1,10 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { readRecentListFile, writeRecentListFile } from '../document/document-files';
 
-const KEY = 'recent';
-
-/** The only file that touches the storage library: reads and writes the recent list as one JSON string. */
+/** Reads and writes the recent list as one JSON string in a file next to the copies; null when there is no file yet. */
 export function readRecent(): Promise<string | null> {
-  return AsyncStorage.getItem(KEY);
+  return readRecentListFile();
 }
 
 export function writeRecent(json: string): Promise<void> {
-  return AsyncStorage.setItem(KEY, json);
+  return writeRecentListFile(json);
 }
