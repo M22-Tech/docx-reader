@@ -17,6 +17,13 @@ Run `./setup.sh`. It checks the prerequisites (and, with nub, downloads the pinn
 
 The test documents in `fixtures/` are committed. To change them, edit `fixtures/make-fixtures.mjs` and run `cd fixtures && npm install && npm run make` (needs LibreOffice's `soffice` on PATH, which converts the generated .docx to .doc, .rtf and .odt).
 
+## To do
+
+- **Text and source files**: open `.txt`, `.md`, `.html` and `.json` files directly (today HTML opens only when it's saved with a `.doc` name). Raw shows the source text, as it already does for HTML; Rendered shows plain text reflowed, Markdown and HTML as formatted pages, and JSON pretty-printed. These formats can't be recognised from their first bytes like the Office formats, so detection also needs the file name and the type the sending app gives, and the intent filters and picker need their MIME types.
+- **PDF reader**: open `.pdf` files. Raw draws the pages as they were laid out, with pinch zoom, using pdf.js inside the viewer page (offline, like the other formats); Rendered reflows the PDF's text to the screen in the chosen font style, size and theme, as far as the file has real text (scanned PDFs are only images and stay Raw-only).
+- **iOS**: release the app for iPhone and iPad. The Expo app and the engine already run there; the work is registering the document types so the app shows up in "Open in" and the share sheet, checking the viewer in iOS's web view, App Store builds and signing (an Apple developer account and Xcode), and the App Store privacy details. iOS has no internet permission to remove, so the no-network promise rests on the viewer's Content-Security-Policy and the app making no requests.
+- **Create your own theme**: alongside light and dark, let people make their own theme in Settings by picking the background, text and accent colours, with a live preview and a warning when text and background are too close to read. The theme colours the app and Rendered mode, the same way light and dark do now.
+
 ## Licence
 
 MIT
