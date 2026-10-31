@@ -61,6 +61,16 @@ Back the key file and its passwords up somewhere safe: if you lose the key, you 
 
 Both run `engine:sync` and `licences`, regenerate `android/` (`expo prebuild --clean`) and run Gradle through `../android-env.sh`. Without the four Gradle properties above the release is signed with the debug key and the script warns that it can't go to the Play Store. `android.versionCode` in `app.json` is 1; raise it for every upload.
 
+### On your own phone, before publishing
+
+A release APK runs on its own, without the Mac or the development server, and the debug key is fine for personal use.
+
+1. `npm run build:apk`.
+2. Install it with the cable: `$ANDROID_HOME/platform-tools/adb install -r android/app/build/outputs/apk/release/app-release.apk`. It installs over the development build, and settings and recent files stay. Without the cable: send the APK to the phone (WhatsApp, Drive or a USB copy), tap it, and allow that app to install apps when Android asks.
+3. To update, repeat both steps.
+
+Before installing from the Play Store later, uninstall this copy: Play installs are signed with Google's key, so Android won't update one into the other (only settings and recent files are lost).
+
 ## Engine sync
 
 The viewer runs the engine's page in a web view. `npm run engine:sync` builds the engine (`npm run build` in `engine/`) and writes `src/viewer/generated/viewer-html.ts` (the page as a string) and `src/viewer/generated/bridge-messages.ts` (a copy of the engine's bridge types). The folder is generated and gitignored. Run it after every change in `engine/`, and before `npm run check` in a fresh clone if `setup.sh` wasn't run (the typecheck needs the generated files). Jest replaces the page with a stub, so tests don't need it.
