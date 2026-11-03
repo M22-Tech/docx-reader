@@ -1,6 +1,7 @@
 # DocX Reader
 
-A document reader for Android phones. It opens Word and OpenDocument text files (`.docx`, `.doc`, `.rtf`, `.odt` and their template variants) received from WhatsApp, Gmail or any file manager, and lets you read them the way you find comfortable: *Raw* shows a document as Word does, and *Rendered* reflows it to fit the phone in the font style and text size you choose, in a light or dark theme. Product behaviour is described in `docs/spec/`, and how it is built in `docs/design/`.
+A document reader for Android and iOS devices. It opens Word and OpenDocument text files (`.docx`, `.doc`, `.rtf`, `.odt` and their template variants) and lets you read them the way you like: *Raw* shows a document as Word does, and *Rendered* reflows it to fit the device, in the font style, theme and text size of your choice.
+Product behaviour is described in `docs/spec/`, and how it is built in `docs/design/`.
 
 ## Setup
 
